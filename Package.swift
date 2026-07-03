@@ -14,6 +14,11 @@ let package = Package(
         .executableTarget(
             name: "VoiceTranslation",
             path: "Sources/VoiceTranslation"
+        ),
+        .testTarget(
+            name: "VoiceTranslationTests",
+            dependencies: ["VoiceTranslation"],
+            path: "Tests/VoiceTranslationTests"
         )
     ]
 )

@@ -17,6 +17,7 @@ final class TranscriptionService {
             fields: [
                 "model": "whisper-1",
                 "language": "tr",
+                "prompt": "Turkish workplace voice reply. It may include English product names and technical terms such as Slack, Framer, GitHub, Codex, OpenAI, DeepSeek, API, design, developer, release, and bug.",
                 "response_format": "json"
             ],
             fileURL: fileURL,
@@ -24,7 +25,7 @@ final class TranscriptionService {
             mimeType: "audio/m4a"
         )
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await NetworkRetry.data(for: request)
         try validate(response: response, data: data, serviceName: "OpenAI transcription")
 
         let decoded = try JSONDecoder().decode(TranscriptionResponse.self, from: data)

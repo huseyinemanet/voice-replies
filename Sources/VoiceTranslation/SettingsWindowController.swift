@@ -5,11 +5,14 @@ final class SettingsWindowController: NSWindowController {
     private let openAIField = NSSecureTextField()
     private let tonePopUp = NSPopUpButton()
     private let variantPopUp = NSPopUpButton()
+    private let shortcutPopUp = NSPopUpButton()
+    private let saveHistoryCheckbox = NSButton(checkboxWithTitle: "Keep the latest copied replies in the menu bar history", target: nil, action: nil)
+    private let launchAtLoginCheckbox = NSButton(checkboxWithTitle: "Start Voice Replies automatically when you log in", target: nil, action: nil)
     private let contextPromptTextView = NSTextView()
 
     private enum Layout {
         static let windowWidth: CGFloat = 620
-        static let windowHeight: CGFloat = 500
+        static let windowHeight: CGFloat = 630
         static let contentPadding: CGFloat = 32
         static let labelWidth: CGFloat = 220
         static let controlWidth: CGFloat = 300
@@ -112,7 +115,22 @@ final class SettingsWindowController: NSWindowController {
                 formRow(
                     title: "Keyboard Shortcut",
                     subtitle: "Press once to record, then again to stop and translate.",
-                    control: shortcutBadge()
+                    control: shortcutPopUp
+                )
+            ]
+        ))
+        content.addArrangedSubview(formSection(
+            title: "Privacy & Automation",
+            rows: [
+                formRow(
+                    title: "Clipboard History",
+                    subtitle: "Stores recent replies locally so you can copy them again.",
+                    control: saveHistoryCheckbox
+                ),
+                formRow(
+                    title: "Launch at Login",
+                    subtitle: "Keeps the menu bar app ready after a restart.",
+                    control: launchAtLoginCheckbox
                 )
             ]
         ))
@@ -144,14 +162,25 @@ final class SettingsWindowController: NSWindowController {
 
         tonePopUp.addItems(withTitles: ReplyTone.allCases.map(\.displayName))
         variantPopUp.addItems(withTitles: OutputVariant.allCases.map(\.rawValue))
+        shortcutPopUp.addItems(withTitles: ShortcutOption.allCases.map(\.displayName))
 
-        [tonePopUp, variantPopUp].forEach { popUp in
+        [tonePopUp, variantPopUp, shortcutPopUp].forEach { popUp in
             popUp.controlSize = .large
             popUp.bezelStyle = .rounded
             popUp.translatesAutoresizingMaskIntoConstraints = false
             NSLayoutConstraint.activate([
                 popUp.widthAnchor.constraint(equalToConstant: Layout.controlWidth),
                 popUp.heightAnchor.constraint(equalToConstant: Layout.controlHeight)
+            ])
+        }
+
+        [saveHistoryCheckbox, launchAtLoginCheckbox].forEach { checkbox in
+            checkbox.font = .systemFont(ofSize: 13)
+            checkbox.controlSize = .regular
+            checkbox.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                checkbox.widthAnchor.constraint(equalToConstant: Layout.controlWidth),
+                checkbox.heightAnchor.constraint(greaterThanOrEqualToConstant: Layout.controlHeight)
             ])
         }
 
@@ -244,22 +273,6 @@ final class SettingsWindowController: NSWindowController {
         return row
     }
 
-    private func shortcutBadge() -> NSView {
-        let label = NSTextField(labelWithString: GlobalHotKey.displayName)
-        label.font = .monospacedSystemFont(ofSize: 12, weight: .medium)
-        label.textColor = .labelColor
-        label.alignment = .center
-        label.wantsLayer = true
-        label.layer?.cornerRadius = 8
-        label.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
-        label.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            label.widthAnchor.constraint(equalToConstant: Layout.controlWidth),
-            label.heightAnchor.constraint(equalToConstant: Layout.controlHeight)
-        ])
-        return label
-    }
-
     private func contextPromptControl() -> NSView {
         let container = NSView()
         container.wantsLayer = true
@@ -318,6 +331,9 @@ final class SettingsWindowController: NSWindowController {
         openAIField.stringValue = KeychainStore.shared.read(account: KeychainAccount.openAIAPIKey) ?? ""
         tonePopUp.selectItem(withTitle: settings.tone.displayName)
         variantPopUp.selectItem(withTitle: settings.outputVariant.rawValue)
+        shortcutPopUp.selectItem(withTitle: settings.shortcut.displayName)
+        saveHistoryCheckbox.state = settings.saveClipboardHistory ? .on : .off
+        launchAtLoginCheckbox.state = LaunchAtLoginController.isEnabled ? .on : .off
         contextPromptTextView.string = settings.contextPrompt
     }
 
@@ -326,24 +342,38 @@ final class SettingsWindowController: NSWindowController {
             let deepSeekKey = deepSeekField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
             let openAIKey = openAIField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
 
-            guard !deepSeekKey.isEmpty, !openAIKey.isEmpty else {
-                showErrorAlert(message: "DeepSeek and transcription API keys are required.")
-                return
+            if deepSeekKey.isEmpty {
+                try KeychainStore.shared.delete(account: KeychainAccount.deepSeekAPIKey)
+            } else {
+                try KeychainStore.shared.save(deepSeekKey, account: KeychainAccount.deepSeekAPIKey)
             }
 
-            try KeychainStore.shared.save(deepSeekKey, account: KeychainAccount.deepSeekAPIKey)
-            try KeychainStore.shared.save(openAIKey, account: KeychainAccount.openAIAPIKey)
+            if openAIKey.isEmpty {
+                try KeychainStore.shared.delete(account: KeychainAccount.openAIAPIKey)
+            } else {
+                try KeychainStore.shared.save(openAIKey, account: KeychainAccount.openAIAPIKey)
+            }
 
             let toneTitle = tonePopUp.selectedItem?.title ?? ReplyTone.casual.displayName
             let variantTitle = variantPopUp.selectedItem?.title ?? OutputVariant.britishEnglish.rawValue
+            let shortcutTitle = shortcutPopUp.selectedItem?.title ?? ShortcutOption.controlOptionCommandSpace.displayName
+            let saveHistory = saveHistoryCheckbox.state == .on
+            try LaunchAtLoginController.setEnabled(launchAtLoginCheckbox.state == .on)
 
             let settings = AppSettings(
                 tone: ReplyTone.allCases.first(where: { $0.displayName == toneTitle }) ?? .casual,
                 outputVariant: OutputVariant(rawValue: variantTitle) ?? .britishEnglish,
-                contextPrompt: contextPromptTextView.string.trimmingCharacters(in: .whitespacesAndNewlines)
+                contextPrompt: contextPromptTextView.string.trimmingCharacters(in: .whitespacesAndNewlines),
+                shortcut: ShortcutOption.allCases.first(where: { $0.displayName == shortcutTitle }) ?? .controlOptionCommandSpace,
+                saveClipboardHistory: saveHistory
             )
             settings.save()
 
+            if !saveHistory {
+                ClipboardHistoryStore.shared.clear()
+            }
+
+            NotificationCenter.default.post(name: .voiceReplySettingsDidChange, object: nil)
             window?.close()
         } catch {
             showErrorAlert(message: error.localizedDescription)

@@ -5,6 +5,7 @@ enum VoiceReplyError: LocalizedError {
     case recordingFailed
     case noActiveRecording
     case noSpeechDetected
+    case inputDeviceChanged
     case invalidServerResponse
     case requestFailed(String)
     case emptyTranscription
@@ -24,6 +25,8 @@ enum VoiceReplyError: LocalizedError {
             return "There is no active recording to stop."
         case .noSpeechDetected:
             return "No speech was detected."
+        case .inputDeviceChanged:
+            return "The microphone input changed during recording. Please record that reply again."
         case .invalidServerResponse:
             return "The server response was not valid."
         case .requestFailed(let message):

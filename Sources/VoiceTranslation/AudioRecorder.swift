@@ -9,6 +9,8 @@ struct RecordedAudio {
 }
 
 final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
+    var onInputDeviceChanged: (() -> Void)?
+
     private var recorder: AVAudioRecorder?
     private var audioURL: URL?
     private var startedAt: Date?
@@ -62,6 +64,7 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
         speechLikeSampleCount = 0
         sampleCount = 0
         startMetering(recorder: recorder)
+        startDeviceChangeObservation()
         return url
     }
 
@@ -73,11 +76,7 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
         updateSpeechDetection(from: recorder)
         let duration = startedAt.map { Date().timeIntervalSince($0) } ?? recorder.currentTime
         recorder.stop()
-        meteringTimer?.invalidate()
-        meteringTimer = nil
-        self.recorder = nil
-        self.audioURL = nil
-        self.startedAt = nil
+        cleanupRecorderState()
 
         let attributes = try? FileManager.default.attributesOfItem(atPath: audioURL.path)
         let fileSize = attributes?[.size] as? UInt64 ?? 0
@@ -88,6 +87,13 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
             duration: duration,
             fileSize: fileSize
         )
+    }
+
+    func cancel() -> URL? {
+        let currentURL = audioURL
+        recorder?.stop()
+        cleanupRecorderState()
+        return currentURL
     }
 
     private func startMetering(recorder: AVAudioRecorder) {
@@ -107,6 +113,38 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
 
         if averagePower > -45 || peakPower > -30 {
             speechLikeSampleCount += 1
+        }
+    }
+
+    private func startDeviceChangeObservation() {
+        let notificationCenter = NotificationCenter.default
+        notificationCenter.addObserver(
+            self,
+            selector: #selector(audioInputDeviceChanged),
+            name: AVCaptureDevice.wasConnectedNotification,
+            object: nil
+        )
+        notificationCenter.addObserver(
+            self,
+            selector: #selector(audioInputDeviceChanged),
+            name: AVCaptureDevice.wasDisconnectedNotification,
+            object: nil
+        )
+    }
+
+    private func cleanupRecorderState() {
+        NotificationCenter.default.removeObserver(self, name: AVCaptureDevice.wasConnectedNotification, object: nil)
+        NotificationCenter.default.removeObserver(self, name: AVCaptureDevice.wasDisconnectedNotification, object: nil)
+        meteringTimer?.invalidate()
+        meteringTimer = nil
+        recorder = nil
+        audioURL = nil
+        startedAt = nil
+    }
+
+    @objc private func audioInputDeviceChanged() {
+        DispatchQueue.main.async { [weak self] in
+            self?.onInputDeviceChanged?()
         }
     }
 }

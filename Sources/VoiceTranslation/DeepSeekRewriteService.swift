@@ -45,7 +45,7 @@ final class DeepSeekRewriteService {
 
         request.httpBody = try JSONEncoder().encode(payload)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await NetworkRetry.data(for: request)
         try validate(response: response, data: data, serviceName: "DeepSeek")
 
         let decoded = try JSONDecoder().decode(ChatCompletionResponse.self, from: data)

@@ -12,6 +12,7 @@ mkdir -p "${APP_BUNDLE}/Contents/MacOS" "${APP_BUNDLE}/Contents/Resources"
 
 cp ".build/release/${EXECUTABLE_NAME}" "${APP_BUNDLE}/Contents/MacOS/${EXECUTABLE_NAME}"
 cp "Resources/Info.plist" "${APP_BUNDLE}/Contents/Info.plist"
+cp "Resources/AppIcon.icns" "${APP_BUNDLE}/Contents/Resources/AppIcon.icns"
 chmod +x "${APP_BUNDLE}/Contents/MacOS/${EXECUTABLE_NAME}"
 
 codesign --force --deep --sign - "${APP_BUNDLE}" >/dev/null

@@ -9,20 +9,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     private let clipboardHistoryStore = ClipboardHistoryStore.shared
     private var globalHotKey: GlobalHotKey?
     private var settingsWindowController: SettingsWindowController?
+    private var resultFallbackWindowController: ResultFallbackWindowController?
     private var statusItem: NSStatusItem!
     private let statusIconView = NSImageView()
     private let spinnerView = StatusSpinnerView()
     private let maximumTranscriptionUploadBytes: UInt64 = 24 * 1024 * 1024
+    private let maximumRecordingDuration: TimeInterval = 10 * 60
     private var recordedAudioURL: URL?
+    private var recordingStartedAt: Date?
+    private var recordingDurationTimer: Timer?
     private var isPreparingRecording = false
     private var isRecording = false
     private var isProcessing = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         removeStaleTemporaryRecordings()
+        configureRecorderCallbacks()
         configureNotifications()
         configureStatusItem()
         configureGlobalHotKey()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(settingsDidChange),
+            name: .voiceReplySettingsDidChange,
+            object: nil
+        )
+    }
+
+    private func configureRecorderCallbacks() {
+        recorder.onInputDeviceChanged = { [weak self] in
+            self?.handleInputDeviceChanged()
+        }
     }
 
     private func configureNotifications() {
@@ -99,6 +116,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
     private func clipboardHistoryMenu() -> NSMenu {
         let menu = NSMenu()
+        let settings = AppSettings.load()
+
+        guard settings.saveClipboardHistory else {
+            let disabledItem = NSMenuItem(title: "History is disabled in Settings", action: nil, keyEquivalent: "")
+            disabledItem.isEnabled = false
+            menu.addItem(disabledItem)
+            return menu
+        }
+
         let items = clipboardHistoryStore.items()
 
         guard !items.isEmpty else {
@@ -155,6 +181,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             try copyToClipboard(text)
             showNotification(title: "Geçmişten kopyalandı", body: notificationPreview(for: text))
         } catch VoiceReplyError.clipboardWriteFailed(let text) {
+            showResultFallback(text)
             showNotification(title: "Clipboard'a kopyalanamadı", body: notificationPreview(for: text))
         } catch {
             showError(error)
@@ -171,8 +198,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     }
 
     private func configureGlobalHotKey() {
+        globalHotKey = nil
+
         do {
-            let hotKey = GlobalHotKey { [weak self] in
+            let shortcut = AppSettings.load().shortcut
+            let hotKey = GlobalHotKey(shortcut: shortcut) { [weak self] in
                 self?.toggleRecording()
             }
             try hotKey.register()
@@ -180,6 +210,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         } catch {
             showError(error)
         }
+    }
+
+    @objc private func settingsDidChange() {
+        configureGlobalHotKey()
     }
 
     private func toggleRecording() {
@@ -221,6 +255,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                 recordedAudioURL = try recorder.start()
                 isPreparingRecording = false
                 isRecording = true
+                startRecordingDurationTimer()
                 updateStatusIcon()
             } catch {
                 isPreparingRecording = false
@@ -241,6 +276,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
     private func stopRecording() {
         guard isRecording else { return }
+        stopRecordingDurationTimer()
 
         do {
             let recordedAudio = try recorder.stop()
@@ -266,6 +302,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         } catch {
             isRecording = false
             isProcessing = false
+            stopRecordingDurationTimer()
             updateStatusIcon()
             showError(error)
         }
@@ -310,7 +347,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                 )
 
                 try copyToClipboard(englishReply)
-                clipboardHistoryStore.add(englishReply)
+                if settings.saveClipboardHistory {
+                    clipboardHistoryStore.add(englishReply)
+                }
                 showNotification(
                     title: "Metin panoya kopyalandı",
                     body: notificationPreview(for: englishReply)
@@ -318,6 +357,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             } catch VoiceReplyError.noSpeechDetected {
                 showNotification(title: "Ses algılanmadı", body: "Panoya bir şey kopyalanmadı.")
             } catch VoiceReplyError.clipboardWriteFailed(let text) {
+                showResultFallback(text)
                 showNotification(title: "Clipboard'a kopyalanamadı", body: notificationPreview(for: text))
             } catch {
                 showError(error)
@@ -333,7 +373,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
         if isRecording {
             symbolName = "stop.circle.fill"
-            description = "Stop recording"
+            description = recordingStatusDescription()
         } else if isPreparingRecording || isProcessing {
             symbolName = ""
             description = isPreparingRecording ? "Preparing recording" : "Processing recording"
@@ -369,6 +409,62 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     private func stopProcessingSpinner() {
         spinnerView.stopSpinning()
         statusIconView.isHidden = false
+    }
+
+    private func startRecordingDurationTimer() {
+        recordingStartedAt = Date()
+        recordingDurationTimer?.invalidate()
+        recordingDurationTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            guard let self, isRecording else { return }
+
+            if let recordingStartedAt, Date().timeIntervalSince(recordingStartedAt) >= maximumRecordingDuration {
+                showNotification(title: "Recording stopped", body: "Reached the 10-minute limit. Processing now.")
+                stopRecording()
+                return
+            }
+
+            statusItem.button?.toolTip = recordingStatusDescription()
+        }
+    }
+
+    private func stopRecordingDurationTimer() {
+        recordingDurationTimer?.invalidate()
+        recordingDurationTimer = nil
+        recordingStartedAt = nil
+    }
+
+    private func recordingStatusDescription() -> String {
+        let elapsed = recordingStartedAt.map { Date().timeIntervalSince($0) } ?? 0
+        return "Recording \(formatDuration(elapsed)) - click to stop"
+    }
+
+    private func formatDuration(_ duration: TimeInterval) -> String {
+        let totalSeconds = max(0, Int(duration.rounded()))
+        let minutes = totalSeconds / 60
+        let seconds = totalSeconds % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+
+    private func handleInputDeviceChanged() {
+        guard isRecording else { return }
+
+        if let audioURL = recorder.cancel() {
+            try? FileManager.default.removeItem(at: audioURL)
+        }
+
+        isRecording = false
+        recordedAudioURL = nil
+        stopRecordingDurationTimer()
+        updateStatusIcon()
+        showError(VoiceReplyError.inputDeviceChanged)
+    }
+
+    private func showResultFallback(_ text: String) {
+        if resultFallbackWindowController == nil {
+            resultFallbackWindowController = ResultFallbackWindowController()
+        }
+
+        resultFallbackWindowController?.show(text: text)
     }
 
     private func showError(_ error: Error) {

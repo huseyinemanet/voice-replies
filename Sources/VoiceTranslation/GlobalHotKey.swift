@@ -2,13 +2,13 @@ import AppKit
 import Carbon.HIToolbox
 
 final class GlobalHotKey {
-    static let displayName = "Control + Option + Command + Space"
-
     private var eventHandlerRef: EventHandlerRef?
     private var hotKeyRef: EventHotKeyRef?
+    private let shortcut: ShortcutOption
     private let onPressed: () -> Void
 
-    init(onPressed: @escaping () -> Void) {
+    init(shortcut: ShortcutOption, onPressed: @escaping () -> Void) {
+        self.shortcut = shortcut
         self.onPressed = onPressed
     }
 
@@ -52,8 +52,8 @@ final class GlobalHotKey {
 
         let hotKeyID = EventHotKeyID(signature: fourCharCode("TVRP"), id: 1)
         let hotKeyStatus = RegisterEventHotKey(
-            UInt32(kVK_Space),
-            UInt32(controlKey | optionKey | cmdKey),
+            UInt32(shortcut.keyCode),
+            UInt32(shortcut.modifiers),
             hotKeyID,
             GetApplicationEventTarget(),
             0,
@@ -69,5 +69,24 @@ final class GlobalHotKey {
         string.utf8.reduce(0) { result, character in
             (result << 8) + OSType(character)
         }
+    }
+}
+
+extension ShortcutOption {
+    var keyCode: Int {
+        switch self {
+        case .controlOptionCommandSpace:
+            return kVK_Space
+        case .controlOptionCommandR:
+            return kVK_ANSI_R
+        case .controlOptionCommandReturn:
+            return kVK_Return
+        case .controlOptionCommandM:
+            return kVK_ANSI_M
+        }
+    }
+
+    var modifiers: Int {
+        controlKey | optionKey | cmdKey
     }
 }

@@ -9,6 +9,8 @@ enum VoiceReplyError: LocalizedError {
     case requestFailed(String)
     case emptyTranscription
     case emptyModelResponse
+    case audioFileTooLarge
+    case clipboardWriteFailed(String)
     case keychainFailure(OSStatus)
     case hotKeyRegistrationFailed(OSStatus)
 
@@ -30,6 +32,10 @@ enum VoiceReplyError: LocalizedError {
             return "The transcription came back empty."
         case .emptyModelResponse:
             return "The translated reply came back empty."
+        case .audioFileTooLarge:
+            return "The recording is too large to upload. Try a shorter message."
+        case .clipboardWriteFailed:
+            return "The reply could not be copied to the clipboard."
         case .keychainFailure(let status):
             return "Keychain save failed with status \(status)."
         case .hotKeyRegistrationFailed(let status):

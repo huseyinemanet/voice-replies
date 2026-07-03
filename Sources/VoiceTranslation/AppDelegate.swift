@@ -11,11 +11,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     private var statusItem: NSStatusItem!
     private let statusIconView = NSImageView()
     private let spinnerView = StatusSpinnerView()
+    private let maximumTranscriptionUploadBytes: UInt64 = 24 * 1024 * 1024
     private var recordedAudioURL: URL?
+    private var isPreparingRecording = false
     private var isRecording = false
     private var isProcessing = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        removeStaleTemporaryRecordings()
         configureNotifications()
         configureStatusItem()
         configureGlobalHotKey()
@@ -68,7 +71,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         let actionTitle = isRecording ? "Stop Recording" : "Start Recording"
         let actionItem = NSMenuItem(title: actionTitle, action: #selector(toggleRecordingFromMenu), keyEquivalent: "")
         actionItem.target = self
-        actionItem.isEnabled = !isProcessing
+        actionItem.isEnabled = !isPreparingRecording && !isProcessing
         menu.addItem(actionItem)
 
         menu.addItem(.separator())
@@ -104,7 +107,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     }
 
     private func toggleRecording() {
-        guard !isProcessing else { return }
+        guard !isPreparingRecording, !isProcessing else { return }
         isRecording ? stopRecording() : startRecording()
     }
 
@@ -118,24 +121,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     }
 
     private func startRecording() {
+        guard !isPreparingRecording, !isRecording, !isProcessing else { return }
+        isPreparingRecording = true
+        updateStatusIcon()
+
         Task { @MainActor in
             do {
                 guard hasRequiredAPIKeys() else {
                     openSettings()
                     showNotification(title: "API key eksik", body: "DeepSeek ve transcription API keylerini Settings ekranına ekle.")
+                    isPreparingRecording = false
+                    updateStatusIcon()
                     return
                 }
 
                 guard try await recorder.ensureMicrophonePermission() else {
                     showNotification(title: "Microphone access needed", body: "Enable microphone access in System Settings.")
+                    isPreparingRecording = false
+                    updateStatusIcon()
                     return
                 }
 
                 recordedAudioURL = try recorder.start()
+                isPreparingRecording = false
                 isRecording = true
                 updateStatusIcon()
             } catch {
+                isPreparingRecording = false
                 showError(error)
+                updateStatusIcon()
             }
         }
     }
@@ -150,6 +164,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     }
 
     private func stopRecording() {
+        guard isRecording else { return }
+
         do {
             let recordedAudio = try recorder.stop()
             recordedAudioURL = recordedAudio.url
@@ -159,6 +175,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             guard recordedAudio.containsSpeech else {
                 try? FileManager.default.removeItem(at: recordedAudio.url)
                 showNotification(title: "Ses algılanmadı", body: "Panoya bir şey kopyalanmadı.")
+                return
+            }
+
+            guard recordedAudio.fileSize <= maximumTranscriptionUploadBytes else {
+                try? FileManager.default.removeItem(at: recordedAudio.url)
+                showError(VoiceReplyError.audioFileTooLarge)
                 return
             }
 
@@ -210,14 +232,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                     apiKey: deepSeekKey
                 )
 
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(englishReply, forType: .string)
+                try copyToClipboard(englishReply)
                 showNotification(
                     title: "Metin panoya kopyalandı",
                     body: notificationPreview(for: englishReply)
                 )
             } catch VoiceReplyError.noSpeechDetected {
                 showNotification(title: "Ses algılanmadı", body: "Panoya bir şey kopyalanmadı.")
+            } catch VoiceReplyError.clipboardWriteFailed(let text) {
+                showNotification(title: "Clipboard'a kopyalanamadı", body: notificationPreview(for: text))
             } catch {
                 showError(error)
             }
@@ -233,9 +256,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         if isRecording {
             symbolName = "stop.circle.fill"
             description = "Stop recording"
-        } else if isProcessing {
+        } else if isPreparingRecording || isProcessing {
             symbolName = ""
-            description = "Processing recording"
+            description = isPreparingRecording ? "Preparing recording" : "Processing recording"
         } else {
             symbolName = "mic.circle.fill"
             description = "Start recording"
@@ -243,7 +266,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
         button.toolTip = description
 
-        if isProcessing {
+        if isPreparingRecording || isProcessing {
             statusIconView.image = nil
             startProcessingSpinner()
         } else {
@@ -313,6 +336,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         ]
 
         return collapsed.isEmpty || knownEmptyOutputs.contains(collapsed)
+    }
+
+    private func copyToClipboard(_ text: String) throws {
+        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedText.isEmpty else {
+            throw VoiceReplyError.emptyModelResponse
+        }
+
+        let pasteboard = NSPasteboard.general
+        let previousString = pasteboard.string(forType: .string)
+
+        pasteboard.clearContents()
+
+        guard pasteboard.setString(trimmedText, forType: .string),
+              pasteboard.string(forType: .string) == trimmedText else {
+            pasteboard.clearContents()
+            if let previousString {
+                pasteboard.setString(previousString, forType: .string)
+            }
+            throw VoiceReplyError.clipboardWriteFailed(trimmedText)
+        }
+    }
+
+    private func removeStaleTemporaryRecordings() {
+        let temporaryDirectory = FileManager.default.temporaryDirectory
+
+        guard let files = try? FileManager.default.contentsOfDirectory(
+            at: temporaryDirectory,
+            includingPropertiesForKeys: nil
+        ) else {
+            return
+        }
+
+        for file in files where file.lastPathComponent.hasPrefix("voice-reply-") && file.pathExtension == "m4a" {
+            try? FileManager.default.removeItem(at: file)
+        }
     }
 
     private func showNotification(title: String, body: String) {

@@ -4,11 +4,14 @@ import Foundation
 struct RecordedAudio {
     let url: URL
     let containsSpeech: Bool
+    let duration: TimeInterval
+    let fileSize: UInt64
 }
 
 final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
     private var recorder: AVAudioRecorder?
     private var audioURL: URL?
+    private var startedAt: Date?
     private var meteringTimer: Timer?
     private var speechLikeSampleCount = 0
     private var sampleCount = 0
@@ -55,6 +58,7 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
 
         self.recorder = recorder
         self.audioURL = url
+        startedAt = Date()
         speechLikeSampleCount = 0
         sampleCount = 0
         startMetering(recorder: recorder)
@@ -67,15 +71,22 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
         }
 
         updateSpeechDetection(from: recorder)
+        let duration = startedAt.map { Date().timeIntervalSince($0) } ?? recorder.currentTime
         recorder.stop()
         meteringTimer?.invalidate()
         meteringTimer = nil
         self.recorder = nil
         self.audioURL = nil
+        self.startedAt = nil
+
+        let attributes = try? FileManager.default.attributesOfItem(atPath: audioURL.path)
+        let fileSize = attributes?[.size] as? UInt64 ?? 0
 
         return RecordedAudio(
             url: audioURL,
-            containsSpeech: speechLikeSampleCount >= 2
+            containsSpeech: speechLikeSampleCount >= 2 && duration >= 0.35,
+            duration: duration,
+            fileSize: fileSize
         )
     }
 

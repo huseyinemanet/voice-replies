@@ -16,6 +16,7 @@ Press the shortcut, speak in Turkish, press it again, and Voice Replies transcri
 - Rewrites the transcript with DeepSeek.
 - Supports `British English` and `American English` output.
 - Supports `casual`, `neutral`, and `polished` tone.
+- Supports an optional context prompt for role or domain-specific wording.
 - Copies the final reply to the clipboard.
 - Keeps the last 20 copied replies in local clipboard history.
 - Shows a macOS notification when allowed.
@@ -54,9 +55,22 @@ The Settings window includes:
 - `Transcription API Key`: OpenAI key used for speech-to-text.
 - `Tone`: `casual`, `neutral`, or `polished`.
 - `Output Variant`: `British English` or `American English`.
+- `Context Prompt`: optional role/domain guidance for the rewrite.
 - `Keyboard Shortcut`: fixed to `Control + Option + Command + Space`.
 
 Both API keys are required. If either key is missing, the app will not start recording and will open Settings instead.
+
+The context prompt is optional. Use it for personal or professional context, for example:
+
+```text
+I am a product designer. Keep replies natural, but preserve design terminology.
+```
+
+or:
+
+```text
+I am a doctor. Keep medical terms accurate and do not over-simplify clinical wording.
+```
 
 ## Output Style
 
@@ -69,6 +83,7 @@ The rewrite prompt is tuned for natural workplace chat:
 - no extra information,
 - no em dashes or en dashes,
 - careful with unclear or incomplete input,
+- influenced by the optional context prompt when provided,
 - matched to the selected British or American English variant.
 
 ## Edge-Case Handling
@@ -94,6 +109,7 @@ Local behaviour:
 
 - API keys are stored in macOS Keychain.
 - Tone and output variant are stored in local user defaults.
+- Context prompt is stored in local user defaults.
 - Clipboard history is stored locally in user defaults.
 - Audio is recorded to a temporary `.m4a` file.
 - Temporary audio is removed after processing.

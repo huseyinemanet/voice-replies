@@ -305,6 +305,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                     turkishText: turkishTranscript,
                     tone: settings.tone,
                     outputVariant: settings.outputVariant,
+                    contextPrompt: settings.contextPrompt,
                     apiKey: deepSeekKey
                 )
 

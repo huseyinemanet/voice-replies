@@ -7,6 +7,7 @@ final class DeepSeekRewriteService {
         turkishText: String,
         tone: ReplyTone,
         outputVariant: OutputVariant,
+        contextPrompt: String,
         apiKey: String
     ) async throws -> String {
         var request = URLRequest(url: endpoint)
@@ -27,6 +28,7 @@ final class DeepSeekRewriteService {
         let userPrompt = """
         Tone: \(toneInstruction(for: tone))
         Variant: \(outputVariant.instruction)
+        Optional user context: \(contextInstruction(from: contextPrompt))
         \(turkishText)
         """
 
@@ -75,6 +77,16 @@ final class DeepSeekRewriteService {
         case .polished:
             return "polished but still human and conversational"
         }
+    }
+
+    private func contextInstruction(from contextPrompt: String) -> String {
+        let trimmedPrompt = contextPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if trimmedPrompt.isEmpty {
+            return "none"
+        }
+
+        return String(trimmedPrompt.prefix(600))
     }
 
     private func cleanRewriteOutput(_ text: String) -> String {

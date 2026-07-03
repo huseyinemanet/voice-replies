@@ -5,14 +5,16 @@ final class SettingsWindowController: NSWindowController {
     private let openAIField = NSSecureTextField()
     private let tonePopUp = NSPopUpButton()
     private let variantPopUp = NSPopUpButton()
+    private let contextPromptTextView = NSTextView()
 
     private enum Layout {
         static let windowWidth: CGFloat = 620
-        static let windowHeight: CGFloat = 410
+        static let windowHeight: CGFloat = 500
         static let contentPadding: CGFloat = 32
         static let labelWidth: CGFloat = 220
         static let controlWidth: CGFloat = 300
         static let controlHeight: CGFloat = 30
+        static let contextHeight: CGFloat = 72
         static let rowGap: CGFloat = 14
         static let sectionGap: CGFloat = 24
     }
@@ -103,6 +105,11 @@ final class SettingsWindowController: NSWindowController {
                     control: variantPopUp
                 ),
                 formRow(
+                    title: "Context Prompt",
+                    subtitle: "Optional role or domain guidance, such as doctor, designer, or developer.",
+                    control: contextPromptControl()
+                ),
+                formRow(
                     title: "Keyboard Shortcut",
                     subtitle: "Press once to record, then again to stop and translate.",
                     control: shortcutBadge()
@@ -147,6 +154,17 @@ final class SettingsWindowController: NSWindowController {
                 popUp.heightAnchor.constraint(equalToConstant: Layout.controlHeight)
             ])
         }
+
+        contextPromptTextView.font = .systemFont(ofSize: 13)
+        contextPromptTextView.textColor = .labelColor
+        contextPromptTextView.backgroundColor = .clear
+        contextPromptTextView.isRichText = false
+        contextPromptTextView.isAutomaticQuoteSubstitutionEnabled = false
+        contextPromptTextView.isAutomaticDashSubstitutionEnabled = false
+        contextPromptTextView.isAutomaticSpellingCorrectionEnabled = false
+        contextPromptTextView.textContainerInset = NSSize(width: 8, height: 6)
+        contextPromptTextView.textContainer?.widthTracksTextView = true
+        contextPromptTextView.textContainer?.heightTracksTextView = false
     }
 
     private func header() -> NSView {
@@ -242,6 +260,23 @@ final class SettingsWindowController: NSWindowController {
         return label
     }
 
+    private func contextPromptControl() -> NSView {
+        let scrollView = NSScrollView()
+        scrollView.borderType = .bezelBorder
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.autohidesScrollers = true
+        scrollView.documentView = contextPromptTextView
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            scrollView.widthAnchor.constraint(equalToConstant: Layout.controlWidth),
+            scrollView.heightAnchor.constraint(equalToConstant: Layout.contextHeight)
+        ])
+
+        return scrollView
+    }
+
     private func footer() -> NSView {
         let row = NSStackView()
         row.orientation = .horizontal
@@ -269,6 +304,7 @@ final class SettingsWindowController: NSWindowController {
         openAIField.stringValue = KeychainStore.shared.read(account: KeychainAccount.openAIAPIKey) ?? ""
         tonePopUp.selectItem(withTitle: settings.tone.displayName)
         variantPopUp.selectItem(withTitle: settings.outputVariant.rawValue)
+        contextPromptTextView.string = settings.contextPrompt
     }
 
     @objc private func save() {
@@ -289,7 +325,8 @@ final class SettingsWindowController: NSWindowController {
 
             let settings = AppSettings(
                 tone: ReplyTone.allCases.first(where: { $0.displayName == toneTitle }) ?? .casual,
-                outputVariant: OutputVariant(rawValue: variantTitle) ?? .britishEnglish
+                outputVariant: OutputVariant(rawValue: variantTitle) ?? .britishEnglish,
+                contextPrompt: contextPromptTextView.string.trimmingCharacters(in: .whitespacesAndNewlines)
             )
             settings.save()
 

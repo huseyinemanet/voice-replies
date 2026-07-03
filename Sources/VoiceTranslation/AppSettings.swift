@@ -27,24 +27,29 @@ enum OutputVariant: String, CaseIterable {
 struct AppSettings {
     var tone: ReplyTone
     var outputVariant: OutputVariant
+    var contextPrompt: String
 
     private enum Keys {
         static let tone = "tone"
         static let outputVariant = "outputVariant"
+        static let contextPrompt = "contextPrompt"
     }
 
     static func load(defaults: UserDefaults = .standard) -> AppSettings {
         let toneValue = defaults.string(forKey: Keys.tone)
         let variantValue = defaults.string(forKey: Keys.outputVariant)
+        let contextPrompt = defaults.string(forKey: Keys.contextPrompt) ?? ""
 
         return AppSettings(
             tone: toneValue.flatMap(ReplyTone.init(rawValue:)) ?? .casual,
-            outputVariant: variantValue.flatMap(OutputVariant.init(rawValue:)) ?? .britishEnglish
+            outputVariant: variantValue.flatMap(OutputVariant.init(rawValue:)) ?? .britishEnglish,
+            contextPrompt: contextPrompt
         )
     }
 
     func save(defaults: UserDefaults = .standard) {
         defaults.set(tone.rawValue, forKey: Keys.tone)
         defaults.set(outputVariant.rawValue, forKey: Keys.outputVariant)
+        defaults.set(contextPrompt, forKey: Keys.contextPrompt)
     }
 }

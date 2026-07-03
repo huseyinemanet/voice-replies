@@ -443,7 +443,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             startProcessingSpinner()
         } else {
             stopProcessingSpinner()
-            statusIconView.image = statusImage(symbolName: symbolName, description: description)
+            statusIconView.image = isRecording
+                ? statusImage(symbolName: symbolName, description: description)
+                : voiceReplyStatusImage(description: description)
         }
     }
 
@@ -453,6 +455,71 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             .withSymbolConfiguration(configuration)
         image?.isTemplate = true
         return image
+    }
+
+    private func voiceReplyStatusImage(description: String) -> NSImage {
+        let image = NSImage(size: NSSize(width: 19, height: 19))
+        image.accessibilityDescription = description
+        image.lockFocus()
+
+        NSColor.black.setStroke()
+        NSColor.black.setFill()
+
+        let head = NSBezierPath(ovalIn: NSRect(x: 9.3, y: 4.7, width: 6.4, height: 6.4))
+        head.fill()
+
+        let neck = NSBezierPath()
+        neck.move(to: NSPoint(x: 11.6, y: 5.2))
+        neck.curve(
+            to: NSPoint(x: 9.1, y: 2.1),
+            controlPoint1: NSPoint(x: 10.9, y: 4.0),
+            controlPoint2: NSPoint(x: 9.8, y: 3.1)
+        )
+        neck.curve(
+            to: NSPoint(x: 16.0, y: 1.5),
+            controlPoint1: NSPoint(x: 11.4, y: 1.1),
+            controlPoint2: NSPoint(x: 14.1, y: 1.0)
+        )
+        neck.curve(
+            to: NSPoint(x: 14.7, y: 5.3),
+            controlPoint1: NSPoint(x: 15.6, y: 3.1),
+            controlPoint2: NSPoint(x: 15.1, y: 4.3)
+        )
+        neck.close()
+        neck.fill()
+
+        let nose = NSBezierPath()
+        nose.move(to: NSPoint(x: 9.8, y: 7.4))
+        nose.line(to: NSPoint(x: 7.6, y: 6.1))
+        nose.curve(
+            to: NSPoint(x: 8.7, y: 5.1),
+            controlPoint1: NSPoint(x: 7.1, y: 5.7),
+            controlPoint2: NSPoint(x: 7.7, y: 5.0)
+        )
+        nose.line(to: NSPoint(x: 9.8, y: 5.1))
+        nose.close()
+        nose.fill()
+
+        drawVoiceWave(rect: NSRect(x: 3.0, y: 10.1, width: 6.2, height: 4.8), lineWidth: 1.6)
+        drawVoiceWave(rect: NSRect(x: 1.0, y: 8.2, width: 10.1, height: 8.7), lineWidth: 1.7)
+
+        image.unlockFocus()
+        image.isTemplate = true
+        return image
+    }
+
+    private func drawVoiceWave(rect: NSRect, lineWidth: CGFloat) {
+        let path = NSBezierPath()
+        path.appendArc(
+            withCenter: NSPoint(x: rect.maxX, y: rect.midY),
+            radius: rect.height / 2,
+            startAngle: 110,
+            endAngle: 250,
+            clockwise: true
+        )
+        path.lineWidth = lineWidth
+        path.lineCapStyle = .round
+        path.stroke()
     }
 
     private func startProcessingSpinner() {

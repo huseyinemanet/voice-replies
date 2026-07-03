@@ -273,8 +273,16 @@ final class SettingsWindowController: NSWindowController {
 
     @objc private func save() {
         do {
-            try KeychainStore.shared.save(deepSeekField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines), account: KeychainAccount.deepSeekAPIKey)
-            try KeychainStore.shared.save(openAIField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines), account: KeychainAccount.openAIAPIKey)
+            let deepSeekKey = deepSeekField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            let openAIKey = openAIField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            guard !deepSeekKey.isEmpty, !openAIKey.isEmpty else {
+                showErrorAlert(message: "DeepSeek and transcription API keys are required.")
+                return
+            }
+
+            try KeychainStore.shared.save(deepSeekKey, account: KeychainAccount.deepSeekAPIKey)
+            try KeychainStore.shared.save(openAIKey, account: KeychainAccount.openAIAPIKey)
 
             let toneTitle = tonePopUp.selectedItem?.title ?? ReplyTone.casual.displayName
             let variantTitle = variantPopUp.selectedItem?.title ?? OutputVariant.britishEnglish.rawValue

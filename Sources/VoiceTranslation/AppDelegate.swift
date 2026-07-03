@@ -120,6 +120,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     private func startRecording() {
         Task { @MainActor in
             do {
+                guard hasRequiredAPIKeys() else {
+                    openSettings()
+                    showNotification(title: "API key eksik", body: "DeepSeek ve transcription API keylerini Settings ekranına ekle.")
+                    return
+                }
+
                 guard try await recorder.ensureMicrophonePermission() else {
                     showNotification(title: "Microphone access needed", body: "Enable microphone access in System Settings.")
                     return
@@ -132,6 +138,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                 showError(error)
             }
         }
+    }
+
+    private func hasRequiredAPIKeys() -> Bool {
+        let deepSeekKey = KeychainStore.shared.read(account: KeychainAccount.deepSeekAPIKey)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let transcriptionKey = KeychainStore.shared.read(account: KeychainAccount.openAIAPIKey)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+
+        return !deepSeekKey.isEmpty && !transcriptionKey.isEmpty
     }
 
     private func stopRecording() {

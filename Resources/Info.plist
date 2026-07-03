@@ -6,10 +6,12 @@
     <string>en</string>
     <key>CFBundleExecutable</key>
     <string>VoiceTranslation</string>
+    <key>CFBundleDisplayName</key>
+    <string>Voice Replies</string>
     <key>CFBundleIdentifier</key>
     <string>com.local.voice-translation</string>
     <key>CFBundleIconFile</key>
-    <string>AppIcon</string>
+    <string>AppIcon.icns</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
@@ -19,7 +21,7 @@
     <key>CFBundleShortVersionString</key>
     <string>0.2.0</string>
     <key>CFBundleVersion</key>
-    <string>3</string>
+    <string>4</string>
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
     <key>NSMicrophoneUsageDescription</key>

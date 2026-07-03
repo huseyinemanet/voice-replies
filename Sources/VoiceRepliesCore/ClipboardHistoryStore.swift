@@ -1,23 +1,23 @@
 import Foundation
 
-struct ClipboardHistoryItem: Codable, Identifiable {
-    let id: UUID
-    let text: String
-    let createdAt: Date
+public struct ClipboardHistoryItem: Codable, Identifiable {
+    public let id: UUID
+    public let text: String
+    public let createdAt: Date
 }
 
-final class ClipboardHistoryStore {
-    static let shared = ClipboardHistoryStore()
+public final class ClipboardHistoryStore {
+    public static let shared = ClipboardHistoryStore()
 
     private let maximumItems = 20
     private let defaultsKey = "clipboardHistoryItems"
     private let defaults: UserDefaults
 
-    init(defaults: UserDefaults = .standard) {
+    public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
     }
 
-    func items() -> [ClipboardHistoryItem] {
+    public func items() -> [ClipboardHistoryItem] {
         guard let data = defaults.data(forKey: defaultsKey),
               let items = try? JSONDecoder().decode([ClipboardHistoryItem].self, from: data) else {
             return []
@@ -26,7 +26,7 @@ final class ClipboardHistoryStore {
         return items
     }
 
-    func add(_ text: String) {
+    public func add(_ text: String) {
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedText.isEmpty else { return }
 
@@ -39,7 +39,7 @@ final class ClipboardHistoryStore {
         save(Array(currentItems.prefix(maximumItems)))
     }
 
-    func clear() {
+    public func clear() {
         defaults.removeObject(forKey: defaultsKey)
     }
 

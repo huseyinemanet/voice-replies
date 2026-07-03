@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import VoiceTranslation
+@testable import VoiceRepliesCore
 
 final class AppSettingsTests: XCTestCase {
     private var suiteName: String!
@@ -24,6 +24,7 @@ final class AppSettingsTests: XCTestCase {
 
         XCTAssertEqual(settings.tone, .casual)
         XCTAssertEqual(settings.outputVariant, .britishEnglish)
+        XCTAssertEqual(settings.speechLanguage, .turkish)
         XCTAssertEqual(settings.shortcut, .controlOptionCommandSpace)
         XCTAssertTrue(settings.saveClipboardHistory)
         XCTAssertEqual(settings.contextPrompt, "")
@@ -33,6 +34,7 @@ final class AppSettingsTests: XCTestCase {
         let settings = AppSettings(
             tone: .polished,
             outputVariant: .americanEnglish,
+            speechLanguage: .turkish,
             contextPrompt: "Keep replies concise.",
             shortcut: .controlOptionCommandR,
             saveClipboardHistory: false
@@ -43,6 +45,7 @@ final class AppSettingsTests: XCTestCase {
 
         XCTAssertEqual(loaded.tone, .polished)
         XCTAssertEqual(loaded.outputVariant, .americanEnglish)
+        XCTAssertEqual(loaded.speechLanguage, .turkish)
         XCTAssertEqual(loaded.contextPrompt, "Keep replies concise.")
         XCTAssertEqual(loaded.shortcut, .controlOptionCommandR)
         XCTAssertFalse(loaded.saveClipboardHistory)

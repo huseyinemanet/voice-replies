@@ -1,19 +1,19 @@
 import Foundation
 import Security
 
-enum KeychainAccount {
-    static let deepSeekAPIKey = "DEEPSEEK_API_KEY"
-    static let openAIAPIKey = "OPENAI_API_KEY"
+public enum KeychainAccount {
+    public static let deepSeekAPIKey = "DEEPSEEK_API_KEY"
+    public static let openAIAPIKey = "OPENAI_API_KEY"
 }
 
-final class KeychainStore {
-    static let shared = KeychainStore()
+public final class KeychainStore {
+    public static let shared = KeychainStore()
 
     private let service = "com.local.voice-translation"
 
     private init() {}
 
-    func read(account: String) -> String? {
+    public func read(account: String) -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -34,7 +34,7 @@ final class KeychainStore {
         return value
     }
 
-    func save(_ value: String, account: String) throws {
+    public func save(_ value: String, account: String) throws {
         let encoded = Data(value.utf8)
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
@@ -63,7 +63,7 @@ final class KeychainStore {
         }
     }
 
-    func delete(account: String) throws {
+    public func delete(account: String) throws {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,

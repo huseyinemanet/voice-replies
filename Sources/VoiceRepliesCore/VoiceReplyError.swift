@@ -1,6 +1,6 @@
 import Foundation
 
-enum VoiceReplyError: LocalizedError {
+public enum VoiceReplyError: LocalizedError {
     case missingAPIKey(String)
     case recordingFailed
     case noActiveRecording
@@ -15,7 +15,7 @@ enum VoiceReplyError: LocalizedError {
     case keychainFailure(OSStatus)
     case hotKeyRegistrationFailed(OSStatus)
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .missingAPIKey(let name):
             return "\(name) is missing. Add it in Settings."

@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import VoiceTranslation
+@testable import VoiceRepliesCore
 
 final class ClipboardHistoryStoreTests: XCTestCase {
     private var suiteName: String!

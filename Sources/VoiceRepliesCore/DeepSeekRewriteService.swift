@@ -1,9 +1,11 @@
 import Foundation
 
-final class DeepSeekRewriteService {
+public final class DeepSeekRewriteService {
     private let endpoint = URL(string: "https://api.deepseek.com/chat/completions")!
 
-    func rewrite(
+    public init() {}
+
+    public func rewrite(
         turkishText: String,
         tone: ReplyTone,
         outputVariant: OutputVariant,

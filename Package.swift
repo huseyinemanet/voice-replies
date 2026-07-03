@@ -5,19 +5,26 @@ import PackageDescription
 let package = Package(
     name: "VoiceTranslation",
     platforms: [
-        .macOS(.v13)
+        .macOS(.v13),
+        .iOS(.v16)
     ],
     products: [
-        .executable(name: "VoiceTranslation", targets: ["VoiceTranslation"])
+        .library(name: "VoiceRepliesCore", targets: ["VoiceRepliesCore"]),
+        .executable(name: "VoiceTranslation", targets: ["VoiceRepliesMac"])
     ],
     targets: [
+        .target(
+            name: "VoiceRepliesCore",
+            path: "Sources/VoiceRepliesCore"
+        ),
         .executableTarget(
-            name: "VoiceTranslation",
-            path: "Sources/VoiceTranslation"
+            name: "VoiceRepliesMac",
+            dependencies: ["VoiceRepliesCore"],
+            path: "Sources/VoiceRepliesMac"
         ),
         .testTarget(
             name: "VoiceTranslationTests",
-            dependencies: ["VoiceTranslation"],
+            dependencies: ["VoiceRepliesCore"],
             path: "Tests/VoiceTranslationTests"
         )
     ]

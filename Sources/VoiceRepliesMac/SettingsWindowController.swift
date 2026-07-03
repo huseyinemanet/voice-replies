@@ -1,4 +1,7 @@
 import AppKit
+#if canImport(VoiceRepliesCore)
+import VoiceRepliesCore
+#endif
 
 final class SettingsWindowController: NSWindowController {
     private let deepSeekField = NSSecureTextField()

@@ -1,5 +1,8 @@
 import AppKit
 import Carbon.HIToolbox
+#if canImport(VoiceRepliesCore)
+import VoiceRepliesCore
+#endif
 
 final class GlobalHotKey {
     private var eventHandlerRef: EventHandlerRef?

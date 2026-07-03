@@ -1,10 +1,12 @@
 import AppKit
 import UserNotifications
+#if canImport(VoiceRepliesCore)
+import VoiceRepliesCore
+#endif
 
 final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
     private let recorder = AudioRecorder()
-    private let transcriptionService = TranscriptionService()
-    private let rewriteService = DeepSeekRewriteService()
+    private let pipeline = VoiceReplyPipeline()
     private let toastPresenter = ToastPresenter()
     private let clipboardHistoryStore = ClipboardHistoryStore.shared
     private var globalHotKey: GlobalHotKey?
@@ -390,30 +392,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                     throw VoiceReplyError.missingAPIKey("OpenAI transcription API key")
                 }
 
-                let turkishTranscript = try await transcriptionService.transcribeTurkishAudio(
-                    fileURL: audioURL,
-                    apiKey: transcriptionKey
+                let result = try await pipeline.process(
+                    audioURL: audioURL,
+                    settings: settings,
+                    deepSeekAPIKey: deepSeekKey,
+                    transcriptionAPIKey: transcriptionKey,
+                    maximumUploadBytes: maximumTranscriptionUploadBytes
                 )
 
-                guard !isLikelyEmptyTranscript(turkishTranscript) else {
-                    throw VoiceReplyError.noSpeechDetected
-                }
-
-                let englishReply = try await rewriteService.rewrite(
-                    turkishText: turkishTranscript,
-                    tone: settings.tone,
-                    outputVariant: settings.outputVariant,
-                    contextPrompt: settings.contextPrompt,
-                    apiKey: deepSeekKey
-                )
-
-                try copyToClipboard(englishReply)
+                try copyToClipboard(result.reply)
                 if settings.saveClipboardHistory {
-                    clipboardHistoryStore.add(englishReply)
+                    clipboardHistoryStore.add(result.reply)
                 }
                 showNotification(
                     title: "Metin panoya kopyalandı",
-                    body: notificationPreview(for: englishReply)
+                    body: notificationPreview(for: result.reply)
                 )
             } catch VoiceReplyError.noSpeechDetected {
                 showNotification(title: "Ses algılanmadı", body: "Panoya bir şey kopyalanmadı.")
@@ -544,33 +537,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
         let endIndex = singleLineText.index(singleLineText.startIndex, offsetBy: 180)
         return String(singleLineText[..<endIndex]) + "..."
-    }
-
-    private func isLikelyEmptyTranscript(_ text: String) -> Bool {
-        let normalized = text
-            .lowercased()
-            .replacingOccurrences(of: "\n", with: " ")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-
-        let collapsed = normalized
-            .components(separatedBy: .whitespacesAndNewlines)
-            .filter { !$0.isEmpty }
-            .joined(separator: " ")
-
-        let knownEmptyOutputs = [
-            "subtitles: m.k.",
-            "subtitles: m.k",
-            "subtitle: m.k.",
-            "subtitle: m.k",
-            "altyazı m.k.",
-            "altyazı m.k",
-            "izlediğiniz için teşekkürler.",
-            "izlediğiniz için teşekkürler",
-            "abone olmayı unutmayın.",
-            "abone olmayı unutmayın"
-        ]
-
-        return collapsed.isEmpty || knownEmptyOutputs.contains(collapsed)
     }
 
     private func copyToClipboard(_ text: String) throws {

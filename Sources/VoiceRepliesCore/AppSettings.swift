@@ -1,20 +1,24 @@
 import Foundation
 
-enum ReplyTone: String, CaseIterable {
+public enum ReplyTone: String, CaseIterable, Identifiable {
     case casual
     case neutral
     case polished
 
-    var displayName: String {
+    public var id: String { rawValue }
+
+    public var displayName: String {
         rawValue.capitalized
     }
 }
 
-enum OutputVariant: String, CaseIterable {
+public enum OutputVariant: String, CaseIterable, Identifiable {
     case britishEnglish = "British English"
     case americanEnglish = "American English"
 
-    var instruction: String {
+    public var id: String { rawValue }
+
+    public var instruction: String {
         switch self {
         case .britishEnglish:
             return "British English spelling and everyday British phrasing"
@@ -24,13 +28,35 @@ enum OutputVariant: String, CaseIterable {
     }
 }
 
-enum ShortcutOption: String, CaseIterable {
+public enum SpeechLanguage: String, CaseIterable, Identifiable {
+    case turkish = "Turkish"
+
+    public var id: String { rawValue }
+
+    public var apiLanguageCode: String {
+        switch self {
+        case .turkish:
+            return "tr"
+        }
+    }
+
+    public var transcriptionPrompt: String {
+        switch self {
+        case .turkish:
+            return "Turkish workplace voice reply. It may include English product names and technical terms such as Slack, Framer, GitHub, Codex, OpenAI, DeepSeek, API, design, developer, release, and bug."
+        }
+    }
+}
+
+public enum ShortcutOption: String, CaseIterable, Identifiable {
     case controlOptionCommandSpace
     case controlOptionCommandR
     case controlOptionCommandReturn
     case controlOptionCommandM
 
-    var displayName: String {
+    public var id: String { rawValue }
+
+    public var displayName: String {
         switch self {
         case .controlOptionCommandSpace:
             return "Control + Option + Command + Space"
@@ -44,24 +70,43 @@ enum ShortcutOption: String, CaseIterable {
     }
 }
 
-struct AppSettings {
-    var tone: ReplyTone
-    var outputVariant: OutputVariant
-    var contextPrompt: String
-    var shortcut: ShortcutOption
-    var saveClipboardHistory: Bool
+public struct AppSettings {
+    public var tone: ReplyTone
+    public var outputVariant: OutputVariant
+    public var speechLanguage: SpeechLanguage
+    public var contextPrompt: String
+    public var shortcut: ShortcutOption
+    public var saveClipboardHistory: Bool
+
+    public init(
+        tone: ReplyTone = .casual,
+        outputVariant: OutputVariant = .britishEnglish,
+        speechLanguage: SpeechLanguage = .turkish,
+        contextPrompt: String = "",
+        shortcut: ShortcutOption = .controlOptionCommandSpace,
+        saveClipboardHistory: Bool = true
+    ) {
+        self.tone = tone
+        self.outputVariant = outputVariant
+        self.speechLanguage = speechLanguage
+        self.contextPrompt = contextPrompt
+        self.shortcut = shortcut
+        self.saveClipboardHistory = saveClipboardHistory
+    }
 
     private enum Keys {
         static let tone = "tone"
         static let outputVariant = "outputVariant"
+        static let speechLanguage = "speechLanguage"
         static let contextPrompt = "contextPrompt"
         static let shortcut = "shortcut"
         static let saveClipboardHistory = "saveClipboardHistory"
     }
 
-    static func load(defaults: UserDefaults = .standard) -> AppSettings {
+    public static func load(defaults: UserDefaults = .standard) -> AppSettings {
         let toneValue = defaults.string(forKey: Keys.tone)
         let variantValue = defaults.string(forKey: Keys.outputVariant)
+        let speechLanguageValue = defaults.string(forKey: Keys.speechLanguage)
         let contextPrompt = defaults.string(forKey: Keys.contextPrompt) ?? ""
         let shortcutValue = defaults.string(forKey: Keys.shortcut)
         let saveClipboardHistory: Bool
@@ -75,21 +120,23 @@ struct AppSettings {
         return AppSettings(
             tone: toneValue.flatMap(ReplyTone.init(rawValue:)) ?? .casual,
             outputVariant: variantValue.flatMap(OutputVariant.init(rawValue:)) ?? .britishEnglish,
+            speechLanguage: speechLanguageValue.flatMap(SpeechLanguage.init(rawValue:)) ?? .turkish,
             contextPrompt: contextPrompt,
             shortcut: shortcutValue.flatMap(ShortcutOption.init(rawValue:)) ?? .controlOptionCommandSpace,
             saveClipboardHistory: saveClipboardHistory
         )
     }
 
-    func save(defaults: UserDefaults = .standard) {
+    public func save(defaults: UserDefaults = .standard) {
         defaults.set(tone.rawValue, forKey: Keys.tone)
         defaults.set(outputVariant.rawValue, forKey: Keys.outputVariant)
+        defaults.set(speechLanguage.rawValue, forKey: Keys.speechLanguage)
         defaults.set(contextPrompt, forKey: Keys.contextPrompt)
         defaults.set(shortcut.rawValue, forKey: Keys.shortcut)
         defaults.set(saveClipboardHistory, forKey: Keys.saveClipboardHistory)
     }
 }
 
-extension Notification.Name {
+public extension Notification.Name {
     static let voiceReplySettingsDidChange = Notification.Name("voiceReplySettingsDidChange")
 }

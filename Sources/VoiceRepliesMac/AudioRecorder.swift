@@ -1,5 +1,8 @@
 import AVFoundation
 import Foundation
+#if canImport(VoiceRepliesCore)
+import VoiceRepliesCore
+#endif
 
 struct RecordedAudio {
     let url: URL

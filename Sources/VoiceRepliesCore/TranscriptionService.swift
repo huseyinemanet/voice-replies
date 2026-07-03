@@ -1,9 +1,15 @@
 import Foundation
 
-final class TranscriptionService {
+public final class TranscriptionService {
     private let endpoint = URL(string: "https://api.openai.com/v1/audio/transcriptions")!
 
-    func transcribeTurkishAudio(fileURL: URL, apiKey: String) async throws -> String {
+    public init() {}
+
+    public func transcribeAudio(
+        fileURL: URL,
+        apiKey: String,
+        speechLanguage: SpeechLanguage
+    ) async throws -> String {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
@@ -16,8 +22,8 @@ final class TranscriptionService {
             boundary: boundary,
             fields: [
                 "model": "whisper-1",
-                "language": "tr",
-                "prompt": "Turkish workplace voice reply. It may include English product names and technical terms such as Slack, Framer, GitHub, Codex, OpenAI, DeepSeek, API, design, developer, release, and bug.",
+                "language": speechLanguage.apiLanguageCode,
+                "prompt": speechLanguage.transcriptionPrompt,
                 "response_format": "json"
             ],
             fileURL: fileURL,
@@ -36,6 +42,10 @@ final class TranscriptionService {
         }
 
         return transcript
+    }
+
+    public func transcribeTurkishAudio(fileURL: URL, apiKey: String) async throws -> String {
+        try await transcribeAudio(fileURL: fileURL, apiKey: apiKey, speechLanguage: .turkish)
     }
 
     private func multipartBody(

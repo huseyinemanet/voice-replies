@@ -1,6 +1,6 @@
 # Voice Replies
 
-Voice Replies is a small private macOS menu bar app for turning Turkish voice notes into natural British-English Slack replies.
+Voice Replies is a small private macOS menu bar app for turning Turkish voice notes into natural English Slack replies.
 
 Click the menu bar microphone, speak in Turkish, stop the recording, and the app transcribes your speech, rewrites it into casual workplace English, copies the result to your clipboard, and shows a short preview.
 
@@ -25,7 +25,7 @@ Click the menu bar microphone, speak in Turkish, stop the recording, and the app
 2. Speak in Turkish.
 3. Stop recording from the icon or by pressing the shortcut again.
 4. The app transcribes the audio.
-5. The Turkish transcript is rewritten into natural British English.
+5. The Turkish transcript is rewritten into the selected English variant.
 6. The final message is copied to the clipboard.
 7. A preview appears in a notification or toast.
 

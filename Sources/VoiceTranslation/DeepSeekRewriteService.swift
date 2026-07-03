@@ -16,16 +16,17 @@ final class DeepSeekRewriteService {
         request.timeoutInterval = 60
 
         let systemPrompt = """
-        Rewrite Turkish Slack replies as natural British English.
+        Rewrite Turkish Slack replies as natural workplace English.
         Sound like two people chatting at work, not a formal corporate message.
         Preserve intent, nuance, and directness. Do not add information.
+        Follow the requested English variant exactly.
         If the input is unclear, keep the reply short and do not guess details.
         Never use em dashes or en dashes. Return only the final message.
         """
 
         let userPrompt = """
         Tone: \(toneInstruction(for: tone))
-        Variant: \(outputVariant.rawValue)
+        Variant: \(outputVariant.instruction)
         \(turkishText)
         """
 

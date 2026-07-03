@@ -79,7 +79,7 @@ final class SettingsWindowController: NSWindowController {
             rows: [
                 formRow(
                     title: "DeepSeek API Key",
-                    subtitle: "Rewrites the Turkish transcript into natural British English.",
+                    subtitle: "Rewrites the Turkish transcript into natural workplace English.",
                     control: deepSeekField
                 ),
                 formRow(
@@ -99,7 +99,7 @@ final class SettingsWindowController: NSWindowController {
                 ),
                 formRow(
                     title: "Output Variant",
-                    subtitle: "The app currently writes in British English.",
+                    subtitle: "Choose British or American English phrasing and spelling.",
                     control: variantPopUp
                 ),
                 formRow(

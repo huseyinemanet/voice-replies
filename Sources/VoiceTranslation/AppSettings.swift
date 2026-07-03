@@ -12,6 +12,16 @@ enum ReplyTone: String, CaseIterable {
 
 enum OutputVariant: String, CaseIterable {
     case britishEnglish = "British English"
+    case americanEnglish = "American English"
+
+    var instruction: String {
+        switch self {
+        case .britishEnglish:
+            return "British English spelling and everyday British phrasing"
+        case .americanEnglish:
+            return "American English spelling and everyday US phrasing"
+        }
+    }
 }
 
 struct AppSettings {

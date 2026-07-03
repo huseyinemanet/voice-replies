@@ -106,6 +106,10 @@ scripts/build_app.sh        Release build and app bundle script
 Package.swift               Swift package definition
 ```
 
+## Known Missing Piece
+
+- The app does not have a dedicated app icon yet. It currently relies on the menu bar status icon only.
+
 ## License
 
 MIT License. See [LICENSE](LICENSE).

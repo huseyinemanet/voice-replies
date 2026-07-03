@@ -10,11 +10,11 @@ Click the menu bar microphone, speak in Turkish, stop the recording, and the app
 - Global shortcut: `Control + Option + Command + Space`.
 - Local microphone recording with macOS permission handling.
 - Turkish speech-to-text through OpenAI Whisper.
-- Natural British-English rewriting through DeepSeek.
+- Natural British or American English rewriting through DeepSeek.
 - Casual Slack-style output for day-to-day workplace replies.
 - Automatic clipboard copy after processing.
 - macOS notification when allowed, with an in-app toast fallback.
-- Local settings screen for API keys and tone.
+- Local settings screen for API keys, tone, and output variant.
 - API keys stored in macOS Keychain.
 - Optional login item support, so the app can launch automatically after restart.
 - Empty/silent recording guard to avoid bogus transcripts.
@@ -80,13 +80,19 @@ Add:
 
 The keys are stored in macOS Keychain. Tone and output variant are stored locally in user defaults.
 
-## Output Style
+## Output Variants
 
-The rewrite prompt is tuned for natural British-English workplace chat:
+Voice Replies supports:
+
+- `British English`
+- `American English`
+
+The rewrite prompt is tuned for natural workplace chat:
 
 - casual and human,
 - not robotic,
 - not overly corporate,
+- matched to the selected English variant,
 - no added information,
 - no em dashes or en dashes,
 - short and careful when the input is unclear.

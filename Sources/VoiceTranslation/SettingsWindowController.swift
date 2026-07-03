@@ -5,11 +5,21 @@ final class SettingsWindowController: NSWindowController {
     private let openAIField = NSSecureTextField()
     private let tonePopUp = NSPopUpButton()
     private let variantPopUp = NSPopUpButton()
-    private let statusLabel = NSTextField(labelWithString: "")
+
+    private enum Layout {
+        static let windowWidth: CGFloat = 620
+        static let windowHeight: CGFloat = 410
+        static let contentPadding: CGFloat = 32
+        static let labelWidth: CGFloat = 220
+        static let controlWidth: CGFloat = 300
+        static let controlHeight: CGFloat = 32
+        static let rowGap: CGFloat = 14
+        static let sectionGap: CGFloat = 24
+    }
 
     convenience init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 560, height: 430),
+            contentRect: NSRect(x: 0, y: 0, width: Layout.windowWidth, height: Layout.windowHeight),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered,
             defer: false
@@ -41,52 +51,60 @@ final class SettingsWindowController: NSWindowController {
             root.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
         ])
 
-        let stack = NSStackView()
-        stack.orientation = .vertical
-        stack.spacing = 18
-        stack.edgeInsets = NSEdgeInsets(top: 34, left: 28, bottom: 24, right: 28)
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        root.addSubview(stack)
+        let content = NSStackView()
+        content.orientation = .vertical
+        content.alignment = .leading
+        content.spacing = Layout.sectionGap
+        content.edgeInsets = NSEdgeInsets(
+            top: Layout.contentPadding,
+            left: Layout.contentPadding,
+            bottom: 24,
+            right: Layout.contentPadding
+        )
+        content.translatesAutoresizingMaskIntoConstraints = false
+        root.addSubview(content)
 
         NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: root.leadingAnchor),
-            stack.trailingAnchor.constraint(equalTo: root.trailingAnchor),
-            stack.topAnchor.constraint(equalTo: root.topAnchor),
-            stack.bottomAnchor.constraint(equalTo: root.bottomAnchor)
+            content.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            content.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+            content.topAnchor.constraint(equalTo: root.topAnchor),
+            content.bottomAnchor.constraint(equalTo: root.bottomAnchor)
         ])
 
-        stack.addArrangedSubview(header())
-        stack.addArrangedSubview(section(
+        configureControls()
+
+        content.addArrangedSubview(header())
+        content.addArrangedSubview(formSection(
             title: "Providers",
             rows: [
-                settingsRow(
+                formRow(
                     title: "DeepSeek API Key",
-                    subtitle: "Used to rewrite your Turkish transcript into natural British English.",
+                    subtitle: "Rewrites the Turkish transcript into natural British English.",
                     control: deepSeekField
                 ),
-                settingsRow(
+                formRow(
                     title: "Transcription API Key",
                     subtitle: "OpenAI key used for Turkish speech-to-text.",
                     control: openAIField
                 )
             ]
         ))
-        stack.addArrangedSubview(section(
+        content.addArrangedSubview(formSection(
             title: "Reply Style",
             rows: [
-                settingsRow(
+                formRow(
                     title: "Tone",
                     subtitle: "Controls how relaxed or polished the final Slack reply feels.",
                     control: tonePopUp
                 ),
-                settingsRow(
+                formRow(
                     title: "Output Variant",
                     subtitle: "The app currently writes in British English.",
                     control: variantPopUp
                 ),
-                settingsRow(
+                formRow(
                     title: "Keyboard Shortcut",
-                    subtitle: "Press once to record, press again to stop and translate.",
+                    subtitle: "Press once to record, then again to stop and translate.",
                     control: shortcutBadge()
                 )
             ]
@@ -94,10 +112,8 @@ final class SettingsWindowController: NSWindowController {
 
         let spacer = NSView()
         spacer.setContentHuggingPriority(.defaultLow, for: .vertical)
-        stack.addArrangedSubview(spacer)
-        stack.addArrangedSubview(footer())
-
-        configureControls()
+        content.addArrangedSubview(spacer)
+        content.addArrangedSubview(footer())
     }
 
     private func configureControls() {
@@ -109,7 +125,10 @@ final class SettingsWindowController: NSWindowController {
             field.controlSize = .large
             field.font = .systemFont(ofSize: 13)
             field.translatesAutoresizingMaskIntoConstraints = false
-            field.widthAnchor.constraint(equalToConstant: 245).isActive = true
+            NSLayoutConstraint.activate([
+                field.widthAnchor.constraint(equalToConstant: Layout.controlWidth),
+                field.heightAnchor.constraint(equalToConstant: Layout.controlHeight)
+            ])
         }
 
         tonePopUp.addItems(withTitles: ReplyTone.allCases.map(\.displayName))
@@ -119,22 +138,30 @@ final class SettingsWindowController: NSWindowController {
             popUp.controlSize = .large
             popUp.bezelStyle = .rounded
             popUp.translatesAutoresizingMaskIntoConstraints = false
-            popUp.widthAnchor.constraint(equalToConstant: 245).isActive = true
+            NSLayoutConstraint.activate([
+                popUp.widthAnchor.constraint(equalToConstant: Layout.controlWidth),
+                popUp.heightAnchor.constraint(equalToConstant: Layout.controlHeight)
+            ])
         }
     }
 
     private func header() -> NSView {
         let stack = NSStackView()
         stack.orientation = .vertical
-        stack.spacing = 5
+        stack.alignment = .leading
+        stack.spacing = 6
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.widthAnchor.constraint(equalToConstant: Layout.windowWidth - (Layout.contentPadding * 2)).isActive = true
 
         let title = NSTextField(labelWithString: "Voice Replies")
-        title.font = .systemFont(ofSize: 22, weight: .semibold)
+        title.font = .systemFont(ofSize: 24, weight: .semibold)
         title.textColor = .labelColor
+        title.alignment = .left
 
         let subtitle = NSTextField(wrappingLabelWithString: "Keep your provider keys local, choose the reply style, and use the shortcut from anywhere on your Mac.")
         subtitle.font = .systemFont(ofSize: 13)
         subtitle.textColor = .secondaryLabelColor
+        subtitle.alignment = .left
         subtitle.maximumNumberOfLines = 2
 
         stack.addArrangedSubview(title)
@@ -142,84 +169,57 @@ final class SettingsWindowController: NSWindowController {
         return stack
     }
 
-    private func section(title: String, rows: [NSView]) -> NSView {
-        let outer = NSStackView()
-        outer.orientation = .vertical
-        outer.spacing = 8
-
-        let label = NSTextField(labelWithString: title)
-        label.font = .systemFont(ofSize: 12, weight: .semibold)
-        label.textColor = .secondaryLabelColor
-
-        let card = NSVisualEffectView()
-        card.material = .contentBackground
-        card.blendingMode = .withinWindow
-        card.state = .active
-        card.wantsLayer = true
-        card.layer?.cornerRadius = 12
-        card.layer?.masksToBounds = true
-
+    private func formSection(title: String, rows: [NSView]) -> NSView {
         let stack = NSStackView()
         stack.orientation = .vertical
-        stack.spacing = 0
+        stack.alignment = .leading
+        stack.spacing = Layout.rowGap
         stack.translatesAutoresizingMaskIntoConstraints = false
-        card.addSubview(stack)
+        stack.widthAnchor.constraint(equalToConstant: Layout.windowWidth - (Layout.contentPadding * 2)).isActive = true
 
-        NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: card.leadingAnchor),
-            stack.trailingAnchor.constraint(equalTo: card.trailingAnchor),
-            stack.topAnchor.constraint(equalTo: card.topAnchor),
-            stack.bottomAnchor.constraint(equalTo: card.bottomAnchor)
-        ])
+        let sectionTitle = NSTextField(labelWithString: title)
+        sectionTitle.font = .systemFont(ofSize: 12, weight: .semibold)
+        sectionTitle.textColor = .secondaryLabelColor
+        sectionTitle.alignment = .left
+        stack.addArrangedSubview(sectionTitle)
 
-        for (index, row) in rows.enumerated() {
-            stack.addArrangedSubview(row)
-            if index < rows.count - 1 {
-                stack.addArrangedSubview(separator())
-            }
-        }
-
-        outer.addArrangedSubview(label)
-        outer.addArrangedSubview(card)
-        return outer
+        rows.forEach { stack.addArrangedSubview($0) }
+        return stack
     }
 
-    private func settingsRow(title: String, subtitle: String, control: NSView) -> NSView {
+    private func formRow(title: String, subtitle: String, control: NSView) -> NSView {
         let row = NSStackView()
         row.orientation = .horizontal
         row.alignment = .centerY
-        row.spacing = 18
-        row.edgeInsets = NSEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+        row.spacing = 24
+        row.translatesAutoresizingMaskIntoConstraints = false
+        row.widthAnchor.constraint(equalToConstant: Layout.windowWidth - (Layout.contentPadding * 2)).isActive = true
 
         let textStack = NSStackView()
         textStack.orientation = .vertical
+        textStack.alignment = .leading
         textStack.spacing = 3
+        textStack.translatesAutoresizingMaskIntoConstraints = false
+        textStack.widthAnchor.constraint(equalToConstant: Layout.labelWidth).isActive = true
 
         let titleLabel = NSTextField(labelWithString: title)
         titleLabel.font = .systemFont(ofSize: 13, weight: .medium)
         titleLabel.textColor = .labelColor
+        titleLabel.alignment = .left
 
         let subtitleLabel = NSTextField(wrappingLabelWithString: subtitle)
         subtitleLabel.font = .systemFont(ofSize: 12)
         subtitleLabel.textColor = .secondaryLabelColor
+        subtitleLabel.alignment = .left
         subtitleLabel.maximumNumberOfLines = 2
 
         textStack.addArrangedSubview(titleLabel)
         textStack.addArrangedSubview(subtitleLabel)
-        textStack.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
         control.setContentHuggingPriority(.required, for: .horizontal)
         row.addArrangedSubview(textStack)
         row.addArrangedSubview(control)
         return row
-    }
-
-    private func separator() -> NSView {
-        let separator = NSBox()
-        separator.boxType = .separator
-        separator.translatesAutoresizingMaskIntoConstraints = false
-        separator.heightAnchor.constraint(equalToConstant: 1).isActive = true
-        return separator
     }
 
     private func shortcutBadge() -> NSView {
@@ -228,12 +228,12 @@ final class SettingsWindowController: NSWindowController {
         label.textColor = .labelColor
         label.alignment = .center
         label.wantsLayer = true
-        label.layer?.cornerRadius = 7
+        label.layer?.cornerRadius = 8
         label.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
         label.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            label.widthAnchor.constraint(equalToConstant: 245),
-            label.heightAnchor.constraint(equalToConstant: 30)
+            label.widthAnchor.constraint(equalToConstant: Layout.controlWidth),
+            label.heightAnchor.constraint(equalToConstant: Layout.controlHeight)
         ])
         return label
     }
@@ -242,20 +242,17 @@ final class SettingsWindowController: NSWindowController {
         let row = NSStackView()
         row.orientation = .horizontal
         row.alignment = .centerY
-        row.spacing = 12
+        row.translatesAutoresizingMaskIntoConstraints = false
+        row.widthAnchor.constraint(equalToConstant: Layout.windowWidth - (Layout.contentPadding * 2)).isActive = true
 
-        statusLabel.textColor = .secondaryLabelColor
-        statusLabel.font = .systemFont(ofSize: 12)
-        statusLabel.lineBreakMode = .byTruncatingTail
+        let spacer = NSView()
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
         let saveButton = NSButton(title: "Save", target: self, action: #selector(save))
         saveButton.bezelStyle = .rounded
         saveButton.controlSize = .large
         saveButton.keyEquivalent = "\r"
 
-        let spacer = NSView()
-        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        row.addArrangedSubview(statusLabel)
         row.addArrangedSubview(spacer)
         row.addArrangedSubview(saveButton)
         return row
@@ -284,9 +281,18 @@ final class SettingsWindowController: NSWindowController {
             )
             settings.save()
 
-            statusLabel.stringValue = "Saved locally"
+            window?.close()
         } catch {
-            statusLabel.stringValue = error.localizedDescription
+            showErrorAlert(message: error.localizedDescription)
         }
+    }
+
+    private func showErrorAlert(message: String) {
+        let alert = NSAlert()
+        alert.messageText = "Settings could not be saved"
+        alert.informativeText = message
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "OK")
+        alert.beginSheetModal(for: window ?? NSWindow()) { _ in }
     }
 }

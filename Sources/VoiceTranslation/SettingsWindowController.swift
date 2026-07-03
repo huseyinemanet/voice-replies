@@ -6,13 +6,13 @@ final class SettingsWindowController: NSWindowController {
     private let tonePopUp = NSPopUpButton()
     private let variantPopUp = NSPopUpButton()
     private let shortcutPopUp = NSPopUpButton()
-    private let saveHistoryCheckbox = NSButton(checkboxWithTitle: "Keep the latest copied replies in the menu bar history", target: nil, action: nil)
-    private let launchAtLoginCheckbox = NSButton(checkboxWithTitle: "Start Voice Replies automatically when you log in", target: nil, action: nil)
+    private let saveHistoryCheckbox = NSButton(checkboxWithTitle: "Save history", target: nil, action: nil)
+    private let launchAtLoginCheckbox = NSButton(checkboxWithTitle: "Open at login", target: nil, action: nil)
     private let contextPromptTextView = NSTextView()
 
     private enum Layout {
         static let windowWidth: CGFloat = 620
-        static let windowHeight: CGFloat = 630
+        static let windowHeight: CGFloat = 580
         static let contentPadding: CGFloat = 32
         static let labelWidth: CGFloat = 220
         static let controlWidth: CGFloat = 300
@@ -84,12 +84,12 @@ final class SettingsWindowController: NSWindowController {
             rows: [
                 formRow(
                     title: "DeepSeek API Key",
-                    subtitle: "Rewrites the Turkish transcript into natural workplace English.",
+                    subtitle: "Turns transcripts into English.",
                     control: deepSeekField
                 ),
                 formRow(
                     title: "Transcription API Key",
-                    subtitle: "OpenAI key used for Turkish speech-to-text.",
+                    subtitle: "Used for speech-to-text.",
                     control: openAIField
                 )
             ]
@@ -99,22 +99,22 @@ final class SettingsWindowController: NSWindowController {
             rows: [
                 formRow(
                     title: "Tone",
-                    subtitle: "Controls how relaxed or polished the final Slack reply feels.",
+                    subtitle: "How the reply should feel.",
                     control: tonePopUp
                 ),
                 formRow(
                     title: "Output Variant",
-                    subtitle: "Choose British or American English phrasing and spelling.",
+                    subtitle: "British or American English.",
                     control: variantPopUp
                 ),
                 formRow(
                     title: "Context Prompt",
-                    subtitle: "Optional role, style, or domain guidance for the rewrite.",
+                    subtitle: "Optional extra guidance.",
                     control: contextPromptControl()
                 ),
                 formRow(
                     title: "Keyboard Shortcut",
-                    subtitle: "Press once to record, then again to stop and translate.",
+                    subtitle: "Start and stop recording.",
                     control: shortcutPopUp
                 )
             ]
@@ -124,12 +124,12 @@ final class SettingsWindowController: NSWindowController {
             rows: [
                 formRow(
                     title: "Clipboard History",
-                    subtitle: "Stores recent replies locally so you can copy them again.",
+                    subtitle: "Keep recent replies.",
                     control: saveHistoryCheckbox
                 ),
                 formRow(
                     title: "Launch at Login",
-                    subtitle: "Keeps the menu bar app ready after a restart.",
+                    subtitle: "Start after restart.",
                     control: launchAtLoginCheckbox
                 )
             ]
@@ -209,7 +209,7 @@ final class SettingsWindowController: NSWindowController {
         title.textColor = .labelColor
         title.alignment = .left
 
-        let subtitle = NSTextField(wrappingLabelWithString: "Keep your provider keys local, choose the reply style, and use the shortcut from anywhere on your Mac.")
+        let subtitle = NSTextField(wrappingLabelWithString: "Set your keys, reply style, and shortcut.")
         subtitle.font = .systemFont(ofSize: 13)
         subtitle.textColor = .secondaryLabelColor
         subtitle.alignment = .left

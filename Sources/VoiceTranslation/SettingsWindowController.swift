@@ -106,7 +106,7 @@ final class SettingsWindowController: NSWindowController {
                 ),
                 formRow(
                     title: "Context Prompt",
-                    subtitle: "Optional role or domain guidance, such as doctor, designer, or developer.",
+                    subtitle: "Optional role, style, or domain guidance for the rewrite.",
                     control: contextPromptControl()
                 ),
                 formRow(
@@ -157,12 +157,12 @@ final class SettingsWindowController: NSWindowController {
 
         contextPromptTextView.font = .systemFont(ofSize: 13)
         contextPromptTextView.textColor = .labelColor
-        contextPromptTextView.backgroundColor = .clear
+        contextPromptTextView.backgroundColor = .textBackgroundColor
         contextPromptTextView.isRichText = false
         contextPromptTextView.isAutomaticQuoteSubstitutionEnabled = false
         contextPromptTextView.isAutomaticDashSubstitutionEnabled = false
         contextPromptTextView.isAutomaticSpellingCorrectionEnabled = false
-        contextPromptTextView.textContainerInset = NSSize(width: 8, height: 6)
+        contextPromptTextView.textContainerInset = NSSize(width: 10, height: 7)
         contextPromptTextView.textContainer?.widthTracksTextView = true
         contextPromptTextView.textContainer?.heightTracksTextView = false
     }
@@ -261,20 +261,34 @@ final class SettingsWindowController: NSWindowController {
     }
 
     private func contextPromptControl() -> NSView {
+        let container = NSView()
+        container.wantsLayer = true
+        container.layer?.cornerRadius = 8
+        container.layer?.borderWidth = 1
+        container.layer?.borderColor = NSColor.separatorColor.withAlphaComponent(0.55).cgColor
+        container.layer?.backgroundColor = NSColor.textBackgroundColor.cgColor
+        container.translatesAutoresizingMaskIntoConstraints = false
+
         let scrollView = NSScrollView()
-        scrollView.borderType = .bezelBorder
+        scrollView.drawsBackground = false
+        scrollView.borderType = .noBorder
         scrollView.hasVerticalScroller = true
         scrollView.hasHorizontalScroller = false
         scrollView.autohidesScrollers = true
         scrollView.documentView = contextPromptTextView
         scrollView.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(scrollView)
 
         NSLayoutConstraint.activate([
-            scrollView.widthAnchor.constraint(equalToConstant: Layout.controlWidth),
-            scrollView.heightAnchor.constraint(equalToConstant: Layout.contextHeight)
+            container.widthAnchor.constraint(equalToConstant: Layout.controlWidth),
+            container.heightAnchor.constraint(equalToConstant: Layout.contextHeight),
+            scrollView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 1),
+            scrollView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -1),
+            scrollView.topAnchor.constraint(equalTo: container.topAnchor, constant: 1),
+            scrollView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -1)
         ])
 
-        return scrollView
+        return container
     }
 
     private func footer() -> NSView {

@@ -38,6 +38,8 @@
 		AA0000000000000000000051 /* iOSVoiceReplyViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000050 /* iOSVoiceReplyViewModel.swift */; };
 		AA0000000000000000000053 /* VoiceRepliesiOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000052 /* VoiceRepliesiOSApp.swift */; };
 		AA000000000000000000001E /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000001D /* AppIcon.icns */; };
+		AA0000000000000000000055 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000054 /* Assets.xcassets */; };
+		AA0000000000000000000057 /* iOSQuickActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000056 /* iOSQuickActions.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -68,6 +70,8 @@
 		AA000000000000000000004E /* iOSAudioRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSAudioRecorder.swift; sourceTree = "<group>"; };
 		AA0000000000000000000050 /* iOSVoiceReplyViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSVoiceReplyViewModel.swift; sourceTree = "<group>"; };
 		AA0000000000000000000052 /* VoiceRepliesiOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceRepliesiOSApp.swift; sourceTree = "<group>"; };
+		AA0000000000000000000054 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AA0000000000000000000056 /* iOSQuickActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSQuickActions.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -127,6 +131,7 @@
 			children = (
 				AA000000000000000000004C /* ContentView.swift */,
 				AA000000000000000000004E /* iOSAudioRecorder.swift */,
+				AA0000000000000000000056 /* iOSQuickActions.swift */,
 				AA0000000000000000000050 /* iOSVoiceReplyViewModel.swift */,
 				AA0000000000000000000052 /* VoiceRepliesiOSApp.swift */,
 			);
@@ -147,6 +152,7 @@
 			isa = PBXGroup;
 			children = (
 				AA000000000000000000001C /* Info.plist */,
+				AA0000000000000000000054 /* Assets.xcassets */,
 			);
 			path = iOS;
 			sourceTree = "<group>";
@@ -233,7 +239,9 @@
 		AA000000000000000000000F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
-			files = ();
+			files = (
+				AA0000000000000000000055 /* Assets.xcassets in Resources */,
+			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
@@ -279,6 +287,7 @@
 				AA0000000000000000000039 /* VoiceReplyPipeline.swift in Sources */,
 				AA000000000000000000004D /* ContentView.swift in Sources */,
 				AA000000000000000000004F /* iOSAudioRecorder.swift in Sources */,
+				AA0000000000000000000057 /* iOSQuickActions.swift in Sources */,
 				AA0000000000000000000051 /* iOSVoiceReplyViewModel.swift in Sources */,
 				AA0000000000000000000053 /* VoiceRepliesiOSApp.swift in Sources */,
 			);
@@ -435,15 +444,17 @@
 		AA0000000000000000000017 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Resources/iOS/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 0.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.local.voice-replies.ios;
 				PRODUCT_NAME = "Voice Replies iOS";
 				SDKROOT = iphoneos;
+				SUPPORTED_DESTINATIONS = "iOS iOS Simulator";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -453,15 +464,17 @@
 		AA0000000000000000000018 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Resources/iOS/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 0.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.local.voice-replies.ios;
 				PRODUCT_NAME = "Voice Replies iOS";
 				SDKROOT = iphoneos;
+				SUPPORTED_DESTINATIONS = "iOS iOS Simulator";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";

@@ -4,8 +4,9 @@ import VoiceRepliesCore
 #endif
 
 struct ContentView: View {
-    @StateObject private var viewModel = iOSVoiceReplyViewModel()
-    @State private var isPressing = false
+    @ObservedObject var viewModel: iOSVoiceReplyViewModel
+    @State private var pulse = false
+    @State private var isHistoryEnabled = AppSettings.load().saveClipboardHistory
 
     var body: some View {
         NavigationStack {
@@ -13,33 +14,75 @@ struct ContentView: View {
                 Spacer()
 
                 Button {
+                    toggleRecording()
                 } label: {
                     ZStack {
+                        if !viewModel.isRecording && !viewModel.isProcessing {
+                            IdleRippleView()
+                        }
+
+                        if viewModel.isRecording {
+                            Circle()
+                                .stroke(.red.opacity(0.34), lineWidth: 3)
+                                .frame(width: 190, height: 190)
+                                .scaleEffect(pulse ? 1.24 : 0.98)
+                                .opacity(pulse ? 0 : 0.7)
+                                .animation(
+                                    .easeOut(duration: 1.15)
+                                        .repeatForever(autoreverses: false),
+                                    value: pulse
+                                )
+
+                            Circle()
+                                .fill(.red.opacity(0.14))
+                                .frame(width: 196, height: 196)
+                                .scaleEffect(pulse ? 1.08 : 0.94)
+                                .animation(
+                                    .easeInOut(duration: 0.9)
+                                        .repeatForever(autoreverses: true),
+                                    value: pulse
+                                )
+                        }
+
                         Circle()
                             .fill(buttonFill)
                             .frame(width: 172, height: 172)
                             .shadow(color: .black.opacity(0.16), radius: 20, y: 10)
 
-                        Image(systemName: buttonSymbol)
-                            .font(.system(size: 58, weight: .semibold))
-                            .foregroundStyle(.white)
+                        if viewModel.isProcessing {
+                            ProcessingSpinnerIcon()
+                        } else {
+                            Image(systemName: buttonSymbol)
+                                .font(.system(size: 58, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .rotationEffect(.degrees(0))
+                        }
                     }
                 }
                 .buttonStyle(.plain)
-                .scaleEffect(isPressing || viewModel.isRecording ? 0.96 : 1)
-                .animation(.snappy(duration: 0.16), value: isPressing)
+                .scaleEffect(viewModel.isRecording ? 0.96 : 1)
                 .animation(.snappy(duration: 0.16), value: viewModel.isRecording)
-                .simultaneousGesture(pressGesture)
                 .disabled(viewModel.isProcessing)
+                .onAppear {
+                    guard viewModel.isRecording else { return }
+
+                    DispatchQueue.main.async {
+                        pulse = true
+                    }
+                }
+                .onChange(of: viewModel.isRecording) { _, isRecording in
+                    pulse = false
+                    guard isRecording else { return }
+
+                    DispatchQueue.main.async {
+                        pulse = true
+                    }
+                }
 
                 VStack(spacing: 8) {
-                    Text(viewModel.statusText)
-                        .font(.headline)
+                    Text(displayStatusText)
+                        .font(.title3.weight(.semibold))
                         .foregroundStyle(primaryStatusColor)
-
-                    Text("Hold to record. Release to translate.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
                 }
 
                 if !viewModel.lastReply.isEmpty {
@@ -61,26 +104,41 @@ struct ContentView: View {
             }
             .navigationTitle("Voice Replies")
             .toolbar {
-                NavigationLink {
-                    iOSSettingsView()
-                } label: {
-                    Image(systemName: "gearshape")
+                if isHistoryEnabled {
+                    ToolbarItem(placement: .topBarLeading) {
+                        NavigationLink {
+                            iOSHistoryView(viewModel: viewModel)
+                        } label: {
+                            Image(systemName: "clock.arrow.circlepath")
+                        }
+                    }
                 }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        iOSSettingsView()
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                }
+            }
+            .onAppear(perform: refreshHistoryVisibility)
+            .onReceive(NotificationCenter.default.publisher(for: .voiceReplySettingsDidChange)) { _ in
+                refreshHistoryVisibility()
             }
         }
     }
 
-    private var pressGesture: some Gesture {
-        DragGesture(minimumDistance: 0)
-            .onChanged { _ in
-                guard !isPressing else { return }
-                isPressing = true
-                viewModel.startRecording()
-            }
-            .onEnded { _ in
-                isPressing = false
-                viewModel.stopRecording()
-            }
+    private func refreshHistoryVisibility() {
+        isHistoryEnabled = AppSettings.load().saveClipboardHistory
+    }
+
+    private func toggleRecording() {
+        if viewModel.isRecording {
+            viewModel.stopRecording()
+        } else {
+            viewModel.startRecording()
+        }
     }
 
     private var buttonSymbol: String {
@@ -97,15 +155,170 @@ struct ContentView: View {
         return viewModel.isRecording ? .red : .teal
     }
 
+    private var displayStatusText: String {
+        if case .copied = viewModel.state {
+            return "Tap to speak"
+        }
+        return viewModel.statusText
+    }
+
     private var primaryStatusColor: Color {
         switch viewModel.state {
         case .failed:
             return .red
-        case .copied:
-            return .green
         default:
             return .primary
         }
+    }
+}
+
+private struct ProcessingSpinnerIcon: View {
+    @State private var isRotating = false
+
+    var body: some View {
+        Image(systemName: "arrow.triangle.2.circlepath")
+            .font(.system(size: 58, weight: .semibold))
+            .foregroundStyle(.white)
+            .rotationEffect(.degrees(isRotating ? 360 : 0))
+            .animation(
+                .linear(duration: 0.9).repeatForever(autoreverses: false),
+                value: isRotating
+            )
+            .onAppear {
+                isRotating = false
+                DispatchQueue.main.async {
+                    isRotating = true
+                }
+            }
+    }
+}
+
+private struct IdleRippleView: View {
+    var body: some View {
+        ZStack {
+            RippleRing(delay: 0)
+            RippleRing(delay: 0.55)
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+private struct RippleRing: View {
+    let delay: Double
+    @State private var isExpanded = false
+
+    var body: some View {
+        Circle()
+            .stroke(.teal.opacity(isExpanded ? 0 : 0.24), lineWidth: 2)
+            .frame(width: 172, height: 172)
+            .scaleEffect(isExpanded ? 1.42 : 1)
+            .animation(
+                .easeOut(duration: 1.8)
+                    .delay(delay)
+                    .repeatForever(autoreverses: false),
+                value: isExpanded
+            )
+            .onAppear {
+                isExpanded = false
+                DispatchQueue.main.async {
+                    isExpanded = true
+                }
+            }
+    }
+}
+
+struct iOSHistoryView: View {
+    @ObservedObject var viewModel: iOSVoiceReplyViewModel
+    @State private var items: [ClipboardHistoryItem] = []
+    @State private var isClearConfirmationVisible = false
+
+    var body: some View {
+        List {
+            if items.isEmpty {
+                ContentUnavailableView(
+                    "No History",
+                    systemImage: "clock.arrow.circlepath",
+                    description: Text("Copied replies will appear here.")
+                )
+            } else {
+                ForEach(items) { item in
+                    Button {
+                        viewModel.copyReplyFromHistory(item.text)
+                        loadItems()
+                    } label: {
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                                Text(item.text)
+                                    .lineLimit(2)
+                                    .foregroundStyle(.primary)
+
+                                Spacer(minLength: 12)
+
+                                Text(timeString(for: item.createdAt))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Text("Tap to copy")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    .buttonStyle(.plain)
+                    .swipeActions(edge: .trailing) {
+                        Button(role: .destructive) {
+                            deleteItem(item)
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+                }
+            }
+        }
+        .navigationTitle("History")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Clear") {
+                    isClearConfirmationVisible = true
+                }
+                .disabled(items.isEmpty)
+            }
+        }
+        .alert("Clear history?", isPresented: $isClearConfirmationVisible) {
+            Button("Cancel", role: .cancel) {}
+            Button("Clear", role: .destructive) {
+                clearHistory()
+            }
+        } message: {
+            Text("This will remove all copied replies from history.")
+        }
+        .onAppear(perform: loadItems)
+        .refreshable {
+            loadItems()
+        }
+    }
+
+    private func loadItems() {
+        items = ClipboardHistoryStore.shared.items()
+    }
+
+    private func clearHistory() {
+        ClipboardHistoryStore.shared.clear()
+        iOSQuickActionManager.shared.refresh()
+        items = []
+    }
+
+    private func deleteItem(_ item: ClipboardHistoryItem) {
+        ClipboardHistoryStore.shared.remove(id: item.id)
+        iOSQuickActionManager.shared.refresh()
+        loadItems()
+    }
+
+    private func timeString(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter.string(from: date)
     }
 }
 
@@ -168,6 +381,18 @@ struct iOSSettingsView: View {
                         .foregroundStyle(.red)
                 }
             }
+
+            Section {
+                HStack {
+                    Spacer()
+                    Text("Designed and developed by huseyinemanet")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                    Spacer()
+                }
+                .listRowBackground(Color.clear)
+            }
         }
         .navigationTitle("Settings")
         .toolbar {
@@ -219,6 +444,8 @@ struct iOSSettingsView: View {
             if !saveHistory {
                 ClipboardHistoryStore.shared.clear()
             }
+            iOSQuickActionManager.shared.refresh()
+            NotificationCenter.default.post(name: .voiceReplySettingsDidChange, object: nil)
 
             dismiss()
         } catch {

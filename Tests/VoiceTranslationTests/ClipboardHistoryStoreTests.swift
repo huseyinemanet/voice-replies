@@ -49,4 +49,15 @@ final class ClipboardHistoryStoreTests: XCTestCase {
 
         XCTAssertTrue(store.items().isEmpty)
     }
+
+    func testRemoveDeletesOnlyMatchingItem() {
+        store.add("First reply")
+        store.add("Second reply")
+        store.add("Third reply")
+
+        let itemToRemove = store.items()[1]
+        store.remove(id: itemToRemove.id)
+
+        XCTAssertEqual(store.items().map(\.text), ["Third reply", "First reply"])
+    }
 }

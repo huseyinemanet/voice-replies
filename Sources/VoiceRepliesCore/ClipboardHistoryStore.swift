@@ -43,6 +43,11 @@ public final class ClipboardHistoryStore {
         defaults.removeObject(forKey: defaultsKey)
     }
 
+    public func remove(id: UUID) {
+        let remainingItems = items().filter { $0.id != id }
+        save(remainingItems)
+    }
+
     private func save(_ items: [ClipboardHistoryItem]) {
         guard let data = try? JSONEncoder().encode(items) else { return }
         defaults.set(data, forKey: defaultsKey)

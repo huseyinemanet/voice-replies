@@ -16,12 +16,13 @@ final class iOSVoiceReplyViewModel: ObservableObject {
     }
 
     @Published private(set) var state: State = .idle
-    @Published private(set) var statusText = "Hold to speak"
+    @Published private(set) var statusText = "Tap to speak"
     @Published private(set) var lastReply = ""
 
     private let recorder = iOSAudioRecorder()
     private let pipeline = VoiceReplyPipeline()
     private let maximumTranscriptionUploadBytes: UInt64 = 24 * 1024 * 1024
+    private var isStartingRecording = false
 
     var isRecording: Bool {
         state == .recording
@@ -31,10 +32,36 @@ final class iOSVoiceReplyViewModel: ObservableObject {
         state == .processing
     }
 
+    func handleShortcutURL(_ url: URL) {
+        guard url.scheme?.lowercased() == "voicereplies" else { return }
+
+        let action = (url.host ?? url.path)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            .lowercased()
+
+        switch action {
+        case "record", "start", "start-recording":
+            startRecording()
+        case "toggle", "toggle-recording":
+            if isRecording {
+                stopRecording()
+            } else {
+                startRecording()
+            }
+        default:
+            break
+        }
+    }
+
     func startRecording() {
-        guard state == .idle || state == .copied || isFailureState else { return }
+        guard !isStartingRecording, state == .idle || state == .copied || isFailureState else { return }
+        isStartingRecording = true
 
         Task {
+            defer {
+                isStartingRecording = false
+            }
+
             do {
                 guard hasRequiredAPIKeys() else {
                     setFailure("Add API keys in Settings.")
@@ -80,7 +107,22 @@ final class iOSVoiceReplyViewModel: ObservableObject {
             try? FileManager.default.removeItem(at: url)
         }
         state = .idle
-        statusText = "Hold to speak"
+        statusText = "Tap to speak"
+    }
+
+    func copyReplyFromHistory(_ text: String) {
+        do {
+            try copyToClipboard(text)
+            let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            ClipboardHistoryStore.shared.add(trimmedText)
+            iOSQuickActionManager.shared.refresh()
+            iOSNotificationPresenter.shared.showCopiedNotification(reply: trimmedText)
+            lastReply = trimmedText
+            state = .copied
+            statusText = "Copied from history"
+        } catch {
+            setFailure(error.localizedDescription)
+        }
     }
 
     private var isFailureState: Bool {
@@ -118,11 +160,13 @@ final class iOSVoiceReplyViewModel: ObservableObject {
                 try copyToClipboard(result.reply)
                 if settings.saveClipboardHistory {
                     ClipboardHistoryStore.shared.add(result.reply)
+                    iOSQuickActionManager.shared.refresh()
                 }
 
                 lastReply = result.reply
                 state = .copied
                 statusText = "Copied"
+                iOSNotificationPresenter.shared.showCopiedNotification(reply: result.reply)
             } catch {
                 setFailure(error.localizedDescription)
             }

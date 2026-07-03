@@ -317,11 +317,17 @@ final class SettingsWindowController: NSWindowController {
         let spacer = NSView()
         spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
+        let creditLabel = NSTextField(labelWithString: "Designed and developed by huseyinemanet")
+        creditLabel.font = .systemFont(ofSize: 11)
+        creditLabel.textColor = .tertiaryLabelColor
+        creditLabel.alignment = .left
+
         let saveButton = NSButton(title: "Save", target: self, action: #selector(save))
         saveButton.bezelStyle = .rounded
         saveButton.controlSize = .large
         saveButton.keyEquivalent = "\r"
 
+        row.addArrangedSubview(creditLabel)
         row.addArrangedSubview(spacer)
         row.addArrangedSubview(saveButton)
         return row

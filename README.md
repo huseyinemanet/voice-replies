@@ -1,87 +1,131 @@
 # Voice Replies
 
-Voice Replies is a private macOS and iOS tool for turning spoken Turkish into natural Slack-ready English replies.
+Voice Replies is a private macOS and iOS productivity app for turning spoken Turkish into natural English replies for Slack and everyday workplace chat.
 
-The shared pipeline records audio, transcribes it with OpenAI Whisper, rewrites it with DeepSeek, copies the final English message to the clipboard, and shows feedback.
+The flow is simple: record your voice, transcribe it, rewrite it with the chosen tone and English variant, copy the final message to the clipboard, and show a short notification when it is ready.
 
-## Current Version
+## What It Does
 
-`0.2.0`
+- Records Turkish voice replies on macOS or iPhone.
+- Transcribes speech with OpenAI Whisper.
+- Rewrites the transcript with DeepSeek.
+- Outputs natural British or American English.
+- Copies the final reply to the clipboard automatically.
+- Shows copied feedback with the translated text.
+- Keeps optional local clipboard history for quick reuse.
+- Stores provider keys locally in Keychain.
 
-## Apps
+This project is built for personal use. It is not intended as a public SaaS, backend service, or App Store product.
+
+## Platforms
 
 ### macOS
 
-- Native menu bar app.
-- Global start/stop shortcut with selectable presets.
-- Clipboard history in the menu bar and Dock recent menu.
-- macOS notifications with toast fallback.
-- Launch at Login support.
-- Existing recording, processing, clipboard, and settings behaviour is preserved.
+The macOS app runs as a menu bar utility.
+
+- Menu bar microphone icon.
+- Global keyboard shortcut for start and stop.
+- Recording, processing, copied, and error states.
+- Clipboard history from the menu bar.
+- Settings window for keys, tone, output variant, context prompt, shortcut, history, and launch at login.
+- macOS notification with a local toast fallback.
+- Optional launch at login.
 
 ### iOS
 
-- Simple SwiftUI app target.
-- Hold the large microphone button to record.
-- Release to stop, transcribe, rewrite, and copy.
-- Shows `Copied` feedback and a short preview of the last reply.
+The iOS app is a small SwiftUI companion app for personal installation from Xcode.
+
+- Large microphone button on the main screen.
+- Tap once to record, tap again to stop and translate.
+- Idle ripple animation behind the microphone button.
+- Recording pulse animation.
+- Processing spinner animation.
+- Automatic clipboard copy through `UIPasteboard`.
+- Local notification when the reply is copied.
+- History screen with tap to copy, swipe to delete, and clear confirmation.
 - Settings screen for API keys, tone, output variant, speech language, context prompt, and history.
+- Home screen quick actions for recent replies.
 
-The iOS app is intended for personal installation from Xcode, not App Store distribution.
+## Translation Behaviour
 
-## Shared Core
+Voice Replies is designed for a Turkish-speaking person replying in workplace chat. The rewrite prompt aims to:
 
-Common code lives in `Sources/VoiceRepliesCore`:
+- sound natural and conversational
+- avoid robotic phrasing
+- preserve intent and directness
+- avoid adding extra information
+- avoid long dash punctuation
+- keep short replies short
+- follow the selected tone: casual, neutral, or polished
+- follow the selected output variant: British English or American English
+- use the optional context prompt when provided
 
-- `AppSettings`
-- `SpeechLanguage`
-- `DeepSeekRewriteService`
-- `TranscriptionService`
-- `VoiceReplyPipeline`
-- `VoiceReplyError`
-- `KeychainStore`
-- `ClipboardHistoryStore`
-- HTTP validation and retry handling
+## API Keys
 
-Platform-specific code stays separate:
+You need:
 
-- `Sources/VoiceRepliesMac`
-- `Sources/VoiceRepliesiOS`
+- `DEEPSEEK_API_KEY`
+- OpenAI transcription API key
 
-## Settings
-
-Both platforms use local settings and Keychain:
-
-- `DeepSeek API Key`
-- `Transcription API Key`
-- `Tone`: casual, neutral, polished
-- `Output Variant`: British English or American English
-- `Speech Language`: Turkish
-- `Context Prompt`
-- `Clipboard History`
-
-macOS also includes:
-
-- `Keyboard Shortcut`
-- `Launch at Login`
+Both are stored locally in Keychain. They are entered from the app settings screens.
 
 ## Privacy
 
 Voice Replies has no backend of its own.
 
 - API keys are stored in Keychain.
-- Settings are stored locally.
+- Settings are stored locally on the device.
 - Clipboard history is optional and local.
 - Temporary audio files are removed after processing.
 - Transcript history is not intentionally stored.
 - Audio is sent to OpenAI for transcription.
 - The transcript is sent to DeepSeek for rewriting.
 
+Disable clipboard history in Settings if you do not want recent replies stored locally.
+
+## Project Structure
+
+```text
+VoiceReplies.xcodeproj             Xcode project with macOS and iOS targets
+Package.swift                      SwiftPM support for shared core and macOS builds
+Resources/Info.plist               macOS app metadata
+Resources/AppIcon.icns             macOS app icon
+Resources/iOS/Info.plist           iOS app metadata
+Resources/iOS/Assets.xcassets/     iOS app icon assets
+Sources/VoiceRepliesCore/          Shared business logic
+Sources/VoiceRepliesMac/           macOS menu bar app
+Sources/VoiceRepliesiOS/           iOS SwiftUI app
+Tests/VoiceTranslationTests/       Unit tests
+scripts/build_app.sh               Local macOS app bundle build
+scripts/package_release.sh         Release packaging helper
+```
+
+## Shared Core
+
+Shared logic lives in `Sources/VoiceRepliesCore`:
+
+- settings model
+- output variant and tone model
+- prompt and rewrite pipeline
+- transcription service
+- DeepSeek API client
+- retry and HTTP validation
+- Keychain storage
+- clipboard history storage
+- common error handling
+
+Platform-specific UI, permissions, clipboard, notifications, shortcuts, and audio recording stay in the macOS and iOS targets.
+
 ## Build
 
-### macOS local bundle
+### Requirements
 
-This path works with Apple Command Line Tools:
+- macOS 13 or later for the macOS app
+- Xcode with iOS SDK for the iOS app
+- Swift 5.9 or later
+- Apple development signing for installing on a physical iPhone
+
+### macOS App Bundle
 
 ```bash
 ./scripts/build_app.sh
@@ -100,7 +144,7 @@ ditto "dist/Voice Replies.app" "/Applications/Voice Replies.app"
 open "/Applications/Voice Replies.app"
 ```
 
-### Xcode project
+### Xcode
 
 Open:
 
@@ -113,51 +157,42 @@ Schemes:
 - `Voice Replies macOS`
 - `Voice Replies iOS`
 
-The iOS target requires full Xcode with an iOS SDK. This machine currently has only Command Line Tools, so iOS builds are verified through GitHub Actions or on a Mac with Xcode installed.
+To install on iPhone, select the `Voice Replies iOS` scheme, choose the connected device, select a development team, and run.
 
-## Checks
+## Useful Checks
 
-SwiftPM macOS build:
-
-```bash
-swift build -c release
-```
-
-SwiftPM tests:
+Swift tests:
 
 ```bash
 swift test
 ```
 
-Xcode target builds:
+macOS build:
 
 ```bash
-xcodebuild -project VoiceReplies.xcodeproj -scheme "Voice Replies macOS" -configuration Release -destination "platform=macOS" CODE_SIGNING_ALLOWED=NO build
-xcodebuild -project VoiceReplies.xcodeproj -scheme "Voice Replies iOS" -configuration Debug -sdk iphonesimulator -destination "generic/platform=iOS Simulator" CODE_SIGNING_ALLOWED=NO build
+xcodebuild -project VoiceReplies.xcodeproj \
+  -scheme "Voice Replies macOS" \
+  -configuration Debug \
+  -destination "platform=macOS" \
+  CODE_SIGNING_ALLOWED=NO \
+  build
 ```
 
-## Project Structure
+iOS simulator build:
 
-```text
-VoiceReplies.xcodeproj             Xcode project with macOS and iOS schemes
-Package.swift                      SwiftPM support for core + macOS app
-Resources/Info.plist               macOS bundle metadata
-Resources/iOS/Info.plist           iOS bundle metadata
-Resources/AppIcon.icns             macOS app icon
-Sources/VoiceRepliesCore/          Shared business logic
-Sources/VoiceRepliesMac/           macOS app code
-Sources/VoiceRepliesiOS/           iOS app code
-Tests/VoiceTranslationTests/       Core unit tests
-scripts/build_app.sh               Local macOS bundle build
-scripts/package_release.sh         Zip, signing, and notarization helper
+```bash
+xcodebuild -project VoiceReplies.xcodeproj \
+  -scheme "Voice Replies iOS" \
+  -configuration Debug \
+  -destination "generic/platform=iOS Simulator" \
+  CODE_SIGNING_ALLOWED=NO \
+  build
 ```
 
-## Releases
+## Version
 
-GitHub Releases:
-
-https://github.com/huseyinemanet/voice-replies/releases
+Current app version: `0.2.0`
 
 ## License
 
-MIT License. See [LICENSE](LICENSE).
+Voice Replies is released under the MIT License. See [LICENSE](LICENSE).

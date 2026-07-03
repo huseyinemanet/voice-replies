@@ -17,6 +17,7 @@ Press the shortcut, speak in Turkish, press it again, and Voice Replies transcri
 - Supports `British English` and `American English` output.
 - Supports `casual`, `neutral`, and `polished` tone.
 - Copies the final reply to the clipboard.
+- Keeps the last 20 copied replies in local clipboard history.
 - Shows a macOS notification when allowed.
 - Falls back to an in-app toast when notifications are disabled.
 - Stores API keys in macOS Keychain.
@@ -34,6 +35,16 @@ Press the shortcut, speak in Turkish, press it again, and Voice Replies transcri
 8. Paste the copied English reply into Slack.
 
 You can also left-click the menu bar icon to start and stop recording.
+
+## Clipboard History
+
+Right-click the menu bar icon and open **Clipboard History** to see recent copied replies.
+
+- The app keeps the latest 20 successful replies.
+- Each item shows a short preview and the time it was created.
+- Click any history item to copy it back to the clipboard.
+- Use **Clear History** from the same submenu to remove stored replies.
+- History is stored locally in user defaults.
 
 ## Settings
 
@@ -83,6 +94,7 @@ Local behaviour:
 
 - API keys are stored in macOS Keychain.
 - Tone and output variant are stored in local user defaults.
+- Clipboard history is stored locally in user defaults.
 - Audio is recorded to a temporary `.m4a` file.
 - Temporary audio is removed after processing.
 - Leftover temporary recordings are removed on next launch.

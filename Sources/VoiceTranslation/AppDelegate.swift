@@ -6,6 +6,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     private let transcriptionService = TranscriptionService()
     private let rewriteService = DeepSeekRewriteService()
     private let toastPresenter = ToastPresenter()
+    private let clipboardHistoryStore = ClipboardHistoryStore.shared
     private var globalHotKey: GlobalHotKey?
     private var settingsWindowController: SettingsWindowController?
     private var statusItem: NSStatusItem!
@@ -76,6 +77,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
         menu.addItem(.separator())
 
+        let historyMenuItem = NSMenuItem(title: "Clipboard History", action: nil, keyEquivalent: "")
+        historyMenuItem.submenu = clipboardHistoryMenu()
+        menu.addItem(historyMenuItem)
+
+        menu.addItem(.separator())
+
         let settingsItem = NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ",")
         settingsItem.target = self
         menu.addItem(settingsItem)
@@ -88,6 +95,75 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         statusItem.menu = menu
         statusItem.button?.performClick(nil)
         statusItem.menu = nil
+    }
+
+    private func clipboardHistoryMenu() -> NSMenu {
+        let menu = NSMenu()
+        let items = clipboardHistoryStore.items()
+
+        guard !items.isEmpty else {
+            let emptyItem = NSMenuItem(title: "No copied replies yet", action: nil, keyEquivalent: "")
+            emptyItem.isEnabled = false
+            menu.addItem(emptyItem)
+            return menu
+        }
+
+        for item in items {
+            let menuItem = NSMenuItem(
+                title: historyTitle(for: item),
+                action: #selector(copyHistoryItem(_:)),
+                keyEquivalent: ""
+            )
+            menuItem.target = self
+            menuItem.representedObject = item.text
+            menu.addItem(menuItem)
+        }
+
+        menu.addItem(.separator())
+
+        let clearItem = NSMenuItem(title: "Clear History", action: #selector(clearClipboardHistory), keyEquivalent: "")
+        clearItem.target = self
+        menu.addItem(clearItem)
+
+        return menu
+    }
+
+    private func historyTitle(for item: ClipboardHistoryItem) -> String {
+        let textPreview = item.text
+            .components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+
+        let previewLimit = 54
+        let preview: String
+        if textPreview.count > previewLimit {
+            let endIndex = textPreview.index(textPreview.startIndex, offsetBy: previewLimit)
+            preview = String(textPreview[..<endIndex]) + "..."
+        } else {
+            preview = textPreview
+        }
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return "\(preview)    \(formatter.string(from: item.createdAt))"
+    }
+
+    @objc private func copyHistoryItem(_ sender: NSMenuItem) {
+        guard let text = sender.representedObject as? String else { return }
+
+        do {
+            try copyToClipboard(text)
+            showNotification(title: "Geçmişten kopyalandı", body: notificationPreview(for: text))
+        } catch VoiceReplyError.clipboardWriteFailed(let text) {
+            showNotification(title: "Clipboard'a kopyalanamadı", body: notificationPreview(for: text))
+        } catch {
+            showError(error)
+        }
+    }
+
+    @objc private func clearClipboardHistory() {
+        clipboardHistoryStore.clear()
+        showNotification(title: "Clipboard history cleared", body: "")
     }
 
     @objc private func toggleRecordingFromMenu() {
@@ -233,6 +309,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                 )
 
                 try copyToClipboard(englishReply)
+                clipboardHistoryStore.add(englishReply)
                 showNotification(
                     title: "Metin panoya kopyalandı",
                     body: notificationPreview(for: englishReply)

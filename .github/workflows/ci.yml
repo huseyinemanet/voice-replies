@@ -23,3 +23,24 @@ jobs:
 
       - name: Test
         run: swift test
+
+      - name: Build macOS app target
+        run: |
+          xcodebuild \
+            -project VoiceReplies.xcodeproj \
+            -scheme "Voice Replies macOS" \
+            -configuration Release \
+            -destination "platform=macOS" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Build iOS app target
+        run: |
+          xcodebuild \
+            -project VoiceReplies.xcodeproj \
+            -scheme "Voice Replies iOS" \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination "generic/platform=iOS Simulator" \
+            CODE_SIGNING_ALLOWED=NO \
+            build

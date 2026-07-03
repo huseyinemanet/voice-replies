@@ -12,7 +12,7 @@ final class SettingsWindowController: NSWindowController {
         static let contentPadding: CGFloat = 32
         static let labelWidth: CGFloat = 220
         static let controlWidth: CGFloat = 300
-        static let controlHeight: CGFloat = 32
+        static let controlHeight: CGFloat = 30
         static let rowGap: CGFloat = 14
         static let sectionGap: CGFloat = 24
     }
@@ -124,6 +124,10 @@ final class SettingsWindowController: NSWindowController {
             field.bezelStyle = .roundedBezel
             field.controlSize = .large
             field.font = .systemFont(ofSize: 13)
+            field.lineBreakMode = .byClipping
+            field.cell?.wraps = false
+            field.cell?.isScrollable = true
+            field.cell?.usesSingleLineMode = true
             field.translatesAutoresizingMaskIntoConstraints = false
             NSLayoutConstraint.activate([
                 field.widthAnchor.constraint(equalToConstant: Layout.controlWidth),

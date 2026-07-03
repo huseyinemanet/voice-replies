@@ -36,6 +36,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         )
     }
 
+    func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
+        dockMenu()
+    }
+
     private func configureRecorderCallbacks() {
         recorder.onInputDeviceChanged = { [weak self] in
             self?.handleInputDeviceChanged()
@@ -114,6 +118,48 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         statusItem.menu = nil
     }
 
+    private func dockMenu() -> NSMenu {
+        let menu = NSMenu()
+
+        let recentTitle = NSMenuItem(title: "Recent", action: nil, keyEquivalent: "")
+        recentTitle.isEnabled = false
+        menu.addItem(recentTitle)
+
+        let settings = AppSettings.load()
+        let items = settings.saveClipboardHistory ? Array(clipboardHistoryStore.items().prefix(4)) : []
+
+        if items.isEmpty {
+            let emptyItem = NSMenuItem(title: settings.saveClipboardHistory ? "No recent replies" : "History off", action: nil, keyEquivalent: "")
+            emptyItem.isEnabled = false
+            menu.addItem(emptyItem)
+        } else {
+            for item in items {
+                let menuItem = NSMenuItem(
+                    title: compactHistoryTitle(for: item),
+                    action: #selector(copyHistoryItem(_:)),
+                    keyEquivalent: ""
+                )
+                menuItem.target = self
+                menuItem.representedObject = item.text
+                menu.addItem(menuItem)
+            }
+        }
+
+        menu.addItem(.separator())
+
+        let startTitle = isRecording ? "Stop Recording" : "Start Recording"
+        let startItem = NSMenuItem(title: startTitle, action: #selector(toggleRecordingFromMenu), keyEquivalent: "")
+        startItem.target = self
+        startItem.isEnabled = !isPreparingRecording && !isProcessing
+        menu.addItem(startItem)
+
+        let settingsItem = NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: "")
+        settingsItem.target = self
+        menu.addItem(settingsItem)
+
+        return menu
+    }
+
     private func clipboardHistoryMenu() -> NSMenu {
         let menu = NSMenu()
         let settings = AppSettings.load()
@@ -172,6 +218,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
         return "\(preview)    \(formatter.string(from: item.createdAt))"
+    }
+
+    private func compactHistoryTitle(for item: ClipboardHistoryItem) -> String {
+        let textPreview = item.text
+            .components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+
+        let previewLimit = 34
+        if textPreview.count > previewLimit {
+            let endIndex = textPreview.index(textPreview.startIndex, offsetBy: previewLimit)
+            return String(textPreview[..<endIndex]) + "..."
+        }
+
+        return textPreview
     }
 
     @objc private func copyHistoryItem(_ sender: NSMenuItem) {

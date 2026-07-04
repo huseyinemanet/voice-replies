@@ -145,15 +145,10 @@ final class iOSVoiceReplyViewModel: ObservableObject {
                     throw VoiceReplyError.missingAPIKey("DeepSeek API key")
                 }
 
-                guard let transcriptionKey = KeychainStore.shared.read(account: KeychainAccount.openAIAPIKey), !transcriptionKey.isEmpty else {
-                    throw VoiceReplyError.missingAPIKey("OpenAI transcription API key")
-                }
-
                 let result = try await pipeline.process(
                     audioURL: audioURL,
                     settings: settings,
                     deepSeekAPIKey: deepSeekKey,
-                    transcriptionAPIKey: transcriptionKey,
                     maximumUploadBytes: maximumTranscriptionUploadBytes
                 )
 
@@ -176,10 +171,8 @@ final class iOSVoiceReplyViewModel: ObservableObject {
     private func hasRequiredAPIKeys() -> Bool {
         let deepSeekKey = KeychainStore.shared.read(account: KeychainAccount.deepSeekAPIKey)?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let transcriptionKey = KeychainStore.shared.read(account: KeychainAccount.openAIAPIKey)?
-            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
-        return !deepSeekKey.isEmpty && !transcriptionKey.isEmpty
+        return !deepSeekKey.isEmpty
     }
 
     private func copyToClipboard(_ text: String) throws {

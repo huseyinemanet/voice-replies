@@ -15,7 +15,10 @@ let package = Package(
     targets: [
         .target(
             name: "VoiceRepliesCore",
-            path: "Sources/VoiceRepliesCore"
+            path: "Sources/VoiceRepliesCore",
+            linkerSettings: [
+                .linkedFramework("Speech")
+            ]
         ),
         .executableTarget(
             name: "VoiceRepliesMac",

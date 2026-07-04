@@ -302,7 +302,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             do {
                 guard hasRequiredAPIKeys() else {
                     openSettings()
-                    showNotification(title: "API key eksik", body: "DeepSeek ve transcription API keylerini Settings ekranına ekle.")
+                    showNotification(title: "API key eksik", body: "DeepSeek API keyini Settings ekranına ekle.")
                     isPreparingRecording = false
                     updateStatusIcon()
                     return
@@ -331,10 +331,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     private func hasRequiredAPIKeys() -> Bool {
         let deepSeekKey = KeychainStore.shared.read(account: KeychainAccount.deepSeekAPIKey)?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let transcriptionKey = KeychainStore.shared.read(account: KeychainAccount.openAIAPIKey)?
-            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
-        return !deepSeekKey.isEmpty && !transcriptionKey.isEmpty
+        return !deepSeekKey.isEmpty
     }
 
     private func stopRecording() {
@@ -387,16 +385,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                     throw VoiceReplyError.missingAPIKey("DeepSeek API key")
                 }
 
-                guard let transcriptionKey = KeychainStore.shared.read(account: KeychainAccount.openAIAPIKey), !transcriptionKey.isEmpty else {
-                    openSettings()
-                    throw VoiceReplyError.missingAPIKey("OpenAI transcription API key")
-                }
-
                 let result = try await pipeline.process(
                     audioURL: audioURL,
                     settings: settings,
                     deepSeekAPIKey: deepSeekKey,
-                    transcriptionAPIKey: transcriptionKey,
                     maximumUploadBytes: maximumTranscriptionUploadBytes
                 )
 

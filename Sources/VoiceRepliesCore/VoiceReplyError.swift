@@ -6,6 +6,8 @@ public enum VoiceReplyError: LocalizedError {
     case noActiveRecording
     case noSpeechDetected
     case inputDeviceChanged
+    case speechRecognitionPermissionDenied
+    case speechRecognitionUnavailable
     case invalidServerResponse
     case requestFailed(String)
     case emptyTranscription
@@ -27,6 +29,10 @@ public enum VoiceReplyError: LocalizedError {
             return "No speech was detected."
         case .inputDeviceChanged:
             return "The microphone input changed during recording. Please record that reply again."
+        case .speechRecognitionPermissionDenied:
+            return "Speech recognition access is needed. Enable it in Settings."
+        case .speechRecognitionUnavailable:
+            return "Speech recognition is not available right now."
         case .invalidServerResponse:
             return "The server response was not valid."
         case .requestFailed(let message):

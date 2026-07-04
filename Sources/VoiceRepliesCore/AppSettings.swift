@@ -40,6 +40,32 @@ public enum SpeechLanguage: String, CaseIterable, Identifiable {
         }
     }
 
+    public var localeIdentifier: String {
+        switch self {
+        case .turkish:
+            return "tr-TR"
+        }
+    }
+
+    public var contextualTerms: [String] {
+        switch self {
+        case .turkish:
+            return [
+                "Slack",
+                "Framer",
+                "GitHub",
+                "Codex",
+                "OpenAI",
+                "DeepSeek",
+                "API",
+                "design",
+                "developer",
+                "release",
+                "bug"
+            ]
+        }
+    }
+
     public var transcriptionPrompt: String {
         switch self {
         case .turkish:

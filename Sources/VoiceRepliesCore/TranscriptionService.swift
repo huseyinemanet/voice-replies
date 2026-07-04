@@ -1,41 +1,32 @@
 import Foundation
+import Speech
 
 public final class TranscriptionService {
-    private let endpoint = URL(string: "https://api.openai.com/v1/audio/transcriptions")!
-
     public init() {}
 
     public func transcribeAudio(
         fileURL: URL,
-        apiKey: String,
         speechLanguage: SpeechLanguage
     ) async throws -> String {
-        var request = URLRequest(url: endpoint)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        request.timeoutInterval = 120
+        guard await requestSpeechRecognitionPermission() else {
+            throw VoiceReplyError.speechRecognitionPermissionDenied
+        }
 
-        let boundary = "Boundary-\(UUID().uuidString)"
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        let locale = Locale(identifier: speechLanguage.localeIdentifier)
+        guard let recognizer = SFSpeechRecognizer(locale: locale), recognizer.isAvailable else {
+            throw VoiceReplyError.speechRecognitionUnavailable
+        }
 
-        request.httpBody = try multipartBody(
-            boundary: boundary,
-            fields: [
-                "model": "whisper-1",
-                "language": speechLanguage.apiLanguageCode,
-                "prompt": speechLanguage.transcriptionPrompt,
-                "response_format": "json"
-            ],
-            fileURL: fileURL,
-            fileFieldName: "file",
-            mimeType: "audio/m4a"
-        )
+        let request = SFSpeechURLRecognitionRequest(url: fileURL)
+        request.shouldReportPartialResults = false
+        request.contextualStrings = speechLanguage.contextualTerms
 
-        let (data, response) = try await NetworkRetry.data(for: request)
-        try validate(response: response, data: data, serviceName: "OpenAI transcription")
+        if recognizer.supportsOnDeviceRecognition {
+            request.requiresOnDeviceRecognition = true
+        }
 
-        let decoded = try JSONDecoder().decode(TranscriptionResponse.self, from: data)
-        let transcript = decoded.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let transcript = try await recognize(request: request, recognizer: recognizer)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard !transcript.isEmpty else {
             throw VoiceReplyError.emptyTranscription
@@ -44,44 +35,54 @@ public final class TranscriptionService {
         return transcript
     }
 
-    public func transcribeTurkishAudio(fileURL: URL, apiKey: String) async throws -> String {
-        try await transcribeAudio(fileURL: fileURL, apiKey: apiKey, speechLanguage: .turkish)
+    public func transcribeTurkishAudio(fileURL: URL) async throws -> String {
+        try await transcribeAudio(fileURL: fileURL, speechLanguage: .turkish)
     }
 
-    private func multipartBody(
-        boundary: String,
-        fields: [String: String],
-        fileURL: URL,
-        fileFieldName: String,
-        mimeType: String
-    ) throws -> Data {
-        var body = Data()
-        let lineBreak = "\r\n"
+    private func requestSpeechRecognitionPermission() async -> Bool {
+        await withCheckedContinuation { continuation in
+            SFSpeechRecognizer.requestAuthorization { status in
+                continuation.resume(returning: status == .authorized)
+            }
+        }
+    }
 
-        for (name, value) in fields {
-            body.append("--\(boundary)\(lineBreak)")
-            body.append("Content-Disposition: form-data; name=\"\(name)\"\(lineBreak + lineBreak)")
-            body.append("\(value)\(lineBreak)")
+    private func recognize(
+        request: SFSpeechURLRecognitionRequest,
+        recognizer: SFSpeechRecognizer
+    ) async throws -> String {
+        let lock = NSLock()
+        var didResume = false
+        var task: SFSpeechRecognitionTask?
+        var continuation: CheckedContinuation<String, Error>?
+
+        func resumeOnce(_ result: Result<String, Error>) {
+            lock.lock()
+            defer { lock.unlock() }
+
+            guard !didResume else { return }
+            didResume = true
+            task?.cancel()
+
+            switch result {
+            case .success(let transcript):
+                continuation?.resume(returning: transcript)
+            case .failure(let error):
+                continuation?.resume(throwing: error)
+            }
         }
 
-        let fileData = try Data(contentsOf: fileURL)
-        body.append("--\(boundary)\(lineBreak)")
-        body.append("Content-Disposition: form-data; name=\"\(fileFieldName)\"; filename=\"\(fileURL.lastPathComponent)\"\(lineBreak)")
-        body.append("Content-Type: \(mimeType)\(lineBreak + lineBreak)")
-        body.append(fileData)
-        body.append(lineBreak)
-        body.append("--\(boundary)--\(lineBreak)")
+        return try await withCheckedThrowingContinuation { checkedContinuation in
+            continuation = checkedContinuation
+            task = recognizer.recognitionTask(with: request) { result, error in
+                if let error {
+                    resumeOnce(.failure(error))
+                    return
+                }
 
-        return body
-    }
-}
-
-private struct TranscriptionResponse: Decodable {
-    let text: String
-}
-
-private extension Data {
-    mutating func append(_ string: String) {
-        append(Data(string.utf8))
+                guard let result, result.isFinal else { return }
+                resumeOnce(.success(result.bestTranscription.formattedString))
+            }
+        }
     }
 }

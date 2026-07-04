@@ -5,7 +5,6 @@ import VoiceRepliesCore
 
 final class SettingsWindowController: NSWindowController {
     private let deepSeekField = NSSecureTextField()
-    private let openAIField = NSSecureTextField()
     private let tonePopUp = NSPopUpButton()
     private let variantPopUp = NSPopUpButton()
     private let shortcutPopUp = NSPopUpButton()
@@ -91,9 +90,9 @@ final class SettingsWindowController: NSWindowController {
                     control: deepSeekField
                 ),
                 formRow(
-                    title: "Transcription API Key",
+                    title: "Transcription",
                     subtitle: "Used for speech-to-text.",
-                    control: openAIField
+                    control: freeTranscriptionLabel()
                 )
             ]
         ))
@@ -146,9 +145,8 @@ final class SettingsWindowController: NSWindowController {
 
     private func configureControls() {
         deepSeekField.placeholderString = "DEEPSEEK_API_KEY"
-        openAIField.placeholderString = "OPENAI_API_KEY"
 
-        [deepSeekField, openAIField].forEach { field in
+        [deepSeekField].forEach { field in
             field.bezelStyle = .roundedBezel
             field.controlSize = .large
             field.font = .systemFont(ofSize: 13)
@@ -307,6 +305,21 @@ final class SettingsWindowController: NSWindowController {
         return container
     }
 
+    private func freeTranscriptionLabel() -> NSView {
+        let label = NSTextField(labelWithString: "Apple Speech, free")
+        label.font = .systemFont(ofSize: 13)
+        label.textColor = .secondaryLabelColor
+        label.alignment = .left
+        label.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            label.widthAnchor.constraint(equalToConstant: Layout.controlWidth),
+            label.heightAnchor.constraint(greaterThanOrEqualToConstant: Layout.controlHeight)
+        ])
+
+        return label
+    }
+
     private func footer() -> NSView {
         let row = NSStackView()
         row.orientation = .horizontal
@@ -337,7 +350,6 @@ final class SettingsWindowController: NSWindowController {
         let settings = AppSettings.load()
 
         deepSeekField.stringValue = KeychainStore.shared.read(account: KeychainAccount.deepSeekAPIKey) ?? ""
-        openAIField.stringValue = KeychainStore.shared.read(account: KeychainAccount.openAIAPIKey) ?? ""
         tonePopUp.selectItem(withTitle: settings.tone.displayName)
         variantPopUp.selectItem(withTitle: settings.outputVariant.rawValue)
         shortcutPopUp.selectItem(withTitle: settings.shortcut.displayName)
@@ -349,18 +361,11 @@ final class SettingsWindowController: NSWindowController {
     @objc private func save() {
         do {
             let deepSeekKey = deepSeekField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            let openAIKey = openAIField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
 
             if deepSeekKey.isEmpty {
                 try KeychainStore.shared.delete(account: KeychainAccount.deepSeekAPIKey)
             } else {
                 try KeychainStore.shared.save(deepSeekKey, account: KeychainAccount.deepSeekAPIKey)
-            }
-
-            if openAIKey.isEmpty {
-                try KeychainStore.shared.delete(account: KeychainAccount.openAIAPIKey)
-            } else {
-                try KeychainStore.shared.save(openAIKey, account: KeychainAccount.openAIAPIKey)
             }
 
             let toneTitle = tonePopUp.selectedItem?.title ?? ReplyTone.casual.displayName

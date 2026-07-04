@@ -65,7 +65,7 @@ Voice Replies is designed for a Turkish-speaking person replying in workplace ch
 You need:
 
 - `DEEPSEEK_API_KEY`
-- OpenAI transcription API key
+- Apple Speech handles Turkish transcription for free, so no transcription API key is needed.
 
 Both are stored locally in Keychain. They are entered from the app settings screens.
 

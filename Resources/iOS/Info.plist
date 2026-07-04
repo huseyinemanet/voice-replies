@@ -35,6 +35,8 @@
     <true/>
     <key>NSMicrophoneUsageDescription</key>
     <string>Record Turkish voice replies so they can be transcribed and rewritten.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>Transcribe your Turkish voice replies with Apple Speech.</string>
     <key>UILaunchScreen</key>
     <dict>
         <key>UIColorName</key>

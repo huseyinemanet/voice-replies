@@ -342,7 +342,6 @@ struct iOSHistoryView: View {
 struct iOSSettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var deepSeekKey = ""
-    @State private var transcriptionKey = ""
     @State private var tone: ReplyTone = .casual
     @State private var outputVariant: OutputVariant = .britishEnglish
     @State private var speechLanguage: SpeechLanguage = .turkish
@@ -358,9 +357,10 @@ struct iOSSettingsView: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
 
-                SecureField("Transcription API Key", text: $transcriptionKey)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
+                LabeledContent("Transcription") {
+                    Text("Apple Speech")
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Section("Reply") {
@@ -434,7 +434,6 @@ struct iOSSettingsView: View {
     private func load() {
         let settings = AppSettings.load()
         deepSeekKey = KeychainStore.shared.read(account: KeychainAccount.deepSeekAPIKey) ?? ""
-        transcriptionKey = KeychainStore.shared.read(account: KeychainAccount.openAIAPIKey) ?? ""
         tone = settings.tone
         outputVariant = settings.outputVariant
         speechLanguage = settings.speechLanguage
@@ -446,18 +445,11 @@ struct iOSSettingsView: View {
     private func save() {
         do {
             let trimmedDeepSeekKey = deepSeekKey.trimmingCharacters(in: .whitespacesAndNewlines)
-            let trimmedTranscriptionKey = transcriptionKey.trimmingCharacters(in: .whitespacesAndNewlines)
 
             if trimmedDeepSeekKey.isEmpty {
                 try KeychainStore.shared.delete(account: KeychainAccount.deepSeekAPIKey)
             } else {
                 try KeychainStore.shared.save(trimmedDeepSeekKey, account: KeychainAccount.deepSeekAPIKey)
-            }
-
-            if trimmedTranscriptionKey.isEmpty {
-                try KeychainStore.shared.delete(account: KeychainAccount.openAIAPIKey)
-            } else {
-                try KeychainStore.shared.save(trimmedTranscriptionKey, account: KeychainAccount.openAIAPIKey)
             }
 
             let currentSettings = AppSettings.load()

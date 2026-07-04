@@ -3,7 +3,6 @@ import Security
 
 public enum KeychainAccount {
     public static let deepSeekAPIKey = "DEEPSEEK_API_KEY"
-    public static let openAIAPIKey = "OPENAI_API_KEY"
 }
 
 public final class KeychainStore {

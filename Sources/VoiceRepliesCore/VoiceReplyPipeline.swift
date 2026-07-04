@@ -21,7 +21,6 @@ public final class VoiceReplyPipeline {
         audioURL: URL,
         settings: AppSettings,
         deepSeekAPIKey: String,
-        transcriptionAPIKey: String,
         maximumUploadBytes: UInt64
     ) async throws -> VoiceReplyResult {
         guard fileSize(for: audioURL) <= maximumUploadBytes else {
@@ -30,7 +29,6 @@ public final class VoiceReplyPipeline {
 
         let transcript = try await transcriptionService.transcribeAudio(
             fileURL: audioURL,
-            apiKey: transcriptionAPIKey,
             speechLanguage: settings.speechLanguage
         )
 

@@ -6,12 +6,12 @@ public struct VoiceReplyResult {
 }
 
 public final class VoiceReplyPipeline {
-    private let transcriptionService: TranscriptionService
-    private let rewriteService: DeepSeekRewriteService
+    private let transcriptionService: AudioTranscribing
+    private let rewriteService: ReplyRewriting
 
     public init(
-        transcriptionService: TranscriptionService = TranscriptionService(),
-        rewriteService: DeepSeekRewriteService = DeepSeekRewriteService()
+        transcriptionService: AudioTranscribing = TranscriptionService(),
+        rewriteService: ReplyRewriting = DeepSeekRewriteService()
     ) {
         self.transcriptionService = transcriptionService
         self.rewriteService = rewriteService

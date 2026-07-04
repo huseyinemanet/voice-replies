@@ -7,7 +7,7 @@ The flow is simple: record your voice, transcribe it, rewrite it with the chosen
 ## What It Does
 
 - Records Turkish voice replies on macOS or iPhone.
-- Transcribes speech with OpenAI Whisper.
+- Transcribes speech with Apple Speech.
 - Rewrites the transcript with DeepSeek.
 - Outputs natural British or American English.
 - Copies the final reply to the clipboard automatically.
@@ -67,7 +67,7 @@ You need:
 - `DEEPSEEK_API_KEY`
 - Apple Speech handles Turkish transcription for free, so no transcription API key is needed.
 
-Both are stored locally in Keychain. They are entered from the app settings screens.
+The DeepSeek key is stored locally in Keychain and entered from the app settings screens.
 
 ## Privacy
 
@@ -78,7 +78,7 @@ Voice Replies has no backend of its own.
 - Clipboard history is optional and local.
 - Temporary audio files are removed after processing.
 - Transcript history is not intentionally stored.
-- Audio is sent to OpenAI for transcription.
+- Speech transcription uses Apple Speech. Apple may process recognition on device or through its system speech service depending on availability.
 - The transcript is sent to DeepSeek for rewriting.
 
 Disable clipboard history in Settings if you do not want recent replies stored locally.
@@ -107,7 +107,7 @@ Shared logic lives in `Sources/VoiceRepliesCore`:
 - settings model
 - output variant and tone model
 - prompt and rewrite pipeline
-- transcription service
+- Apple Speech transcription service
 - DeepSeek API client
 - retry and HTTP validation
 - Keychain storage

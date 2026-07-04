@@ -8,6 +8,7 @@ public enum VoiceReplyError: LocalizedError {
     case inputDeviceChanged
     case speechRecognitionPermissionDenied
     case speechRecognitionUnavailable
+    case speechRecognitionTimedOut
     case invalidServerResponse
     case requestFailed(String)
     case emptyTranscription
@@ -33,6 +34,8 @@ public enum VoiceReplyError: LocalizedError {
             return "Speech recognition access is needed. Enable it in Settings."
         case .speechRecognitionUnavailable:
             return "Speech recognition is not available right now."
+        case .speechRecognitionTimedOut:
+            return "Speech recognition took too long. Please try again."
         case .invalidServerResponse:
             return "The server response was not valid."
         case .requestFailed(let message):

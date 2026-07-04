@@ -317,7 +317,7 @@ final class SettingsWindowController: NSWindowController {
         let spacer = NSView()
         spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
-        let creditLabel = NSTextField(labelWithString: "Designed and developed by huseyinemanet")
+        let creditLabel = NSTextField(labelWithString: "Designed and developed by Huseyin Emanet")
         creditLabel.font = .systemFont(ofSize: 11)
         creditLabel.textColor = .tertiaryLabelColor
         creditLabel.alignment = .left
@@ -374,7 +374,8 @@ final class SettingsWindowController: NSWindowController {
                 outputVariant: OutputVariant(rawValue: variantTitle) ?? .britishEnglish,
                 contextPrompt: contextPromptTextView.string.trimmingCharacters(in: .whitespacesAndNewlines),
                 shortcut: ShortcutOption.allCases.first(where: { $0.displayName == shortcutTitle }) ?? .controlOptionCommandSpace,
-                saveClipboardHistory: saveHistory
+                saveClipboardHistory: saveHistory,
+                startRecordingOnLaunch: AppSettings.load().startRecordingOnLaunch
             )
             settings.save()
 

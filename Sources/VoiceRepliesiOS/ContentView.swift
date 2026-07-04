@@ -7,6 +7,7 @@ struct ContentView: View {
     @ObservedObject var viewModel: iOSVoiceReplyViewModel
     @State private var pulse = false
     @State private var isHistoryEnabled = AppSettings.load().saveClipboardHistory
+    @State private var didHandleLaunchRecording = false
 
     var body: some View {
         NavigationStack {
@@ -122,7 +123,10 @@ struct ContentView: View {
                     }
                 }
             }
-            .onAppear(perform: refreshHistoryVisibility)
+            .onAppear {
+                refreshHistoryVisibility()
+                startRecordingOnLaunchIfNeeded()
+            }
             .onReceive(NotificationCenter.default.publisher(for: .voiceReplySettingsDidChange)) { _ in
                 refreshHistoryVisibility()
             }
@@ -131,6 +135,19 @@ struct ContentView: View {
 
     private func refreshHistoryVisibility() {
         isHistoryEnabled = AppSettings.load().saveClipboardHistory
+    }
+
+    private func startRecordingOnLaunchIfNeeded() {
+        guard !didHandleLaunchRecording else { return }
+        didHandleLaunchRecording = true
+
+        let settings = AppSettings.load()
+        guard settings.startRecordingOnLaunch else { return }
+        guard !viewModel.isRecording, !viewModel.isProcessing else { return }
+
+        DispatchQueue.main.async {
+            viewModel.startRecording()
+        }
     }
 
     private func toggleRecording() {
@@ -331,6 +348,7 @@ struct iOSSettingsView: View {
     @State private var speechLanguage: SpeechLanguage = .turkish
     @State private var contextPrompt = ""
     @State private var saveHistory = true
+    @State private var startRecordingOnLaunch = false
     @State private var saveError: String?
 
     var body: some View {
@@ -375,6 +393,14 @@ struct iOSSettingsView: View {
                 Toggle("Save history", isOn: $saveHistory)
             }
 
+            Section {
+                Toggle("Start listening on open", isOn: $startRecordingOnLaunch)
+            } header: {
+                Text("Startup")
+            } footer: {
+                Text("When enabled, opening Voice Replies starts recording right away.")
+            }
+
             if let saveError {
                 Section {
                     Text(saveError)
@@ -385,7 +411,7 @@ struct iOSSettingsView: View {
             Section {
                 HStack {
                     Spacer()
-                    Text("Designed and developed by huseyinemanet")
+                    Text("Designed and developed by Huseyin Emanet")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -414,6 +440,7 @@ struct iOSSettingsView: View {
         speechLanguage = settings.speechLanguage
         contextPrompt = settings.contextPrompt
         saveHistory = settings.saveClipboardHistory
+        startRecordingOnLaunch = settings.startRecordingOnLaunch
     }
 
     private func save() {
@@ -433,12 +460,15 @@ struct iOSSettingsView: View {
                 try KeychainStore.shared.save(trimmedTranscriptionKey, account: KeychainAccount.openAIAPIKey)
             }
 
+            let currentSettings = AppSettings.load()
             AppSettings(
                 tone: tone,
                 outputVariant: outputVariant,
                 speechLanguage: speechLanguage,
                 contextPrompt: contextPrompt.trimmingCharacters(in: .whitespacesAndNewlines),
-                saveClipboardHistory: saveHistory
+                shortcut: currentSettings.shortcut,
+                saveClipboardHistory: saveHistory,
+                startRecordingOnLaunch: startRecordingOnLaunch
             ).save()
 
             if !saveHistory {

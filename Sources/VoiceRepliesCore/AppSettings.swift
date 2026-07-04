@@ -77,6 +77,7 @@ public struct AppSettings {
     public var contextPrompt: String
     public var shortcut: ShortcutOption
     public var saveClipboardHistory: Bool
+    public var startRecordingOnLaunch: Bool
 
     public init(
         tone: ReplyTone = .casual,
@@ -84,7 +85,8 @@ public struct AppSettings {
         speechLanguage: SpeechLanguage = .turkish,
         contextPrompt: String = "",
         shortcut: ShortcutOption = .controlOptionCommandSpace,
-        saveClipboardHistory: Bool = true
+        saveClipboardHistory: Bool = true,
+        startRecordingOnLaunch: Bool = false
     ) {
         self.tone = tone
         self.outputVariant = outputVariant
@@ -92,6 +94,7 @@ public struct AppSettings {
         self.contextPrompt = contextPrompt
         self.shortcut = shortcut
         self.saveClipboardHistory = saveClipboardHistory
+        self.startRecordingOnLaunch = startRecordingOnLaunch
     }
 
     private enum Keys {
@@ -101,6 +104,7 @@ public struct AppSettings {
         static let contextPrompt = "contextPrompt"
         static let shortcut = "shortcut"
         static let saveClipboardHistory = "saveClipboardHistory"
+        static let startRecordingOnLaunch = "startRecordingOnLaunch"
     }
 
     public static func load(defaults: UserDefaults = .standard) -> AppSettings {
@@ -123,7 +127,8 @@ public struct AppSettings {
             speechLanguage: speechLanguageValue.flatMap(SpeechLanguage.init(rawValue:)) ?? .turkish,
             contextPrompt: contextPrompt,
             shortcut: shortcutValue.flatMap(ShortcutOption.init(rawValue:)) ?? .controlOptionCommandSpace,
-            saveClipboardHistory: saveClipboardHistory
+            saveClipboardHistory: saveClipboardHistory,
+            startRecordingOnLaunch: defaults.bool(forKey: Keys.startRecordingOnLaunch)
         )
     }
 
@@ -134,6 +139,7 @@ public struct AppSettings {
         defaults.set(contextPrompt, forKey: Keys.contextPrompt)
         defaults.set(shortcut.rawValue, forKey: Keys.shortcut)
         defaults.set(saveClipboardHistory, forKey: Keys.saveClipboardHistory)
+        defaults.set(startRecordingOnLaunch, forKey: Keys.startRecordingOnLaunch)
     }
 }
 

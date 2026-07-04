@@ -27,6 +27,7 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertEqual(settings.speechLanguage, .turkish)
         XCTAssertEqual(settings.shortcut, .controlOptionCommandSpace)
         XCTAssertTrue(settings.saveClipboardHistory)
+        XCTAssertFalse(settings.startRecordingOnLaunch)
         XCTAssertEqual(settings.contextPrompt, "")
     }
 
@@ -37,7 +38,8 @@ final class AppSettingsTests: XCTestCase {
             speechLanguage: .turkish,
             contextPrompt: "Keep replies concise.",
             shortcut: .controlOptionCommandR,
-            saveClipboardHistory: false
+            saveClipboardHistory: false,
+            startRecordingOnLaunch: true
         )
 
         settings.save(defaults: defaults)
@@ -49,5 +51,6 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertEqual(loaded.contextPrompt, "Keep replies concise.")
         XCTAssertEqual(loaded.shortcut, .controlOptionCommandR)
         XCTAssertFalse(loaded.saveClipboardHistory)
+        XCTAssertTrue(loaded.startRecordingOnLaunch)
     }
 }
